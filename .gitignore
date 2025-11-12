@@ -13,6 +13,9 @@
 # production/build
 */build
 
+__pycache__/
+server/flaskr/__pycache__
+
 # misc
 .DS_Store
 .env.local
