@@ -14,8 +14,6 @@ def radar_activity(id):
             ],
         }
 
-    
-
 @bp.route('/list', methods=['GET'])
 def radar_list():
     radar_ids = [1, 3, 5, 6]

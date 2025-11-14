@@ -13,6 +13,9 @@ def create_app(test_config=None):
 
     CORS(app)
 
+    from . import db
+    db.init_app(app)
+
     from . import radar
     app.register_blueprint(radar.bp)
 
