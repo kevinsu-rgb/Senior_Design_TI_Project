@@ -12,6 +12,7 @@
     "electron": "^38.4.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.5",
     "react-scripts": "5.0.1",
     "remote": "^0.2.6",
     "wait-on": "^9.0.1",
@@ -23,7 +24,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "flask:dev": "cd server && python app.py",
+    "flask:dev": "cd server && flask --app flaskr run --debug",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "dev": "concurrently \"cross-env BROWSER=none npm start\" \"npm run electron:start\" \"npm run flask:dev\"",
@@ -47,5 +48,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.18"
   }
 }

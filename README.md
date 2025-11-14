@@ -6,14 +6,19 @@
 
 ```
 python -m venv venv
-. venv/bin/activate
-pip install -R server/Requirements.txt
+. venv/Scripts/activate
+pip install -r server/Requirements.txt
 ```
 3. Start the development server with `npm run dev`.
 
 __Note: the proxy may require you to add the following to your .env__
 ```
 DANGEROUSLY_DISABLE_HOST_CHECK=true
+```
+
+To format the code we can use Biome in the `gui/` folder
+```
+npx @biomejs/biome format ./src --write
 ```
 
 ![test](gui/assets/test.png)
