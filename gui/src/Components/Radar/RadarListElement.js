@@ -1,12 +1,16 @@
-export default function RadarCard({ radar }) {
+import { useGetRadarById } from "../../hooks/useRadar";
+
+export default function RadarListElement({ radarId }) {
+	const radar = useGetRadarById(radarId);
+
 	const statusConfig = {
-		active: {
+		standing: {
 			bg: "bg-neutral-700",
 			border: "border-neutral-600",
 			badge: "bg-green-600",
 			text: "Standing",
 		},
-		fall: {
+		falling: {
 			bg: "bg-red-900/40",
 			border: "border-red-600",
 			badge: "bg-red-600",
@@ -14,7 +18,7 @@ export default function RadarCard({ radar }) {
 		},
 	};
 
-	const config = statusConfig[radar?.status] || statusConfig.active;
+	const config = statusConfig[radar?.status] || statusConfig.standing;
 
 	return (
 		<div
