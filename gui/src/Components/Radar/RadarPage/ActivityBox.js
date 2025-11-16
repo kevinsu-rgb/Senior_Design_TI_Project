@@ -1,29 +1,16 @@
-import { useEffect, useState } from "react";
+import { useGetRadarById } from "../../../hooks/useRadar";
 
-export default function ActivityBox({ radar }) {
-	const [activityLog, setActivityLog] = useState([]);
+export default function ActivityBox({ radarId }) {
+	const radar = useGetRadarById(radarId);
 
-	useEffect(() => {
-		async function fetchActivityLog() {
-			try {
-				const response = await fetch(`/api/radar/activity/${radar.radar_id}`);
-				if (response.ok) {
-					const data = await response.json();
-					setActivityLog(data?.activity || []);
-				}
-			} catch (err) {
-				console.error("Error getting activity log: ", err);
-			}
-		}
-		fetchActivityLog();
-	}, [radar.radar_id]);
+	if (!radar) return null;
 
 	return (
 		<div className="bg-bg2 rounded-lg p-8 overflow-hidden h-full flex flex-col">
 			<h3 className="text-2xl font-bold text-white">Activity</h3>
 
 			<div className="flex flex-col gap-3  overflow-y-auto mt-4">
-				{activityLog.map((log, index) => (
+				{radar?.activity_log?.map((log, index) => (
 					<div
 						key={index}
 						className="border-2 border-gray-600 rounded-lg bg-gray-700 p-4 flex items-center"

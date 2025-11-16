@@ -16,17 +16,13 @@ def radar_activity(id):
 
 @bp.route('/list', methods=['GET'])
 def radar_list():
-    radar_ids = [1, 3, 5, 6]
+    radar_ids = [1]
     radars = []
     for radar_id in radar_ids:
         radars.append({
             "radar_id": radar_id,
-            "is_connected": True,
             "name": "Radar " + chr(64 + radar_id),
-            "status": "standing",
-            "people_count": "2",
             "timestamp": "2024-06-01T12:00:00Z",
-            "uptime": "30d 12h 30m 30s",
         })
 
     return {"radars": radars}

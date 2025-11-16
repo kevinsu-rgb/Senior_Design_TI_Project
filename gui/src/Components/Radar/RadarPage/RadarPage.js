@@ -2,11 +2,12 @@ import { useNavigate, useLocation } from "react-router-dom";
 import BackButton from "./BackButton";
 import ActivityBox from "./ActivityBox";
 import StatusBox from "./StatusBox";
+import { useContext } from "react";
 
 export default function RadarPage() {
 	const navigate = useNavigate();
 	const location = useLocation();
-	const radar = location.state?.radar;
+	const radarId = location.state?.radarId;
 
 	return (
 		<div className="h-full flex flex-col overflow-hidden">
@@ -16,11 +17,11 @@ export default function RadarPage() {
 
 			<div className="flex-1 p-4 flex flex-col gap-4 min-h-0">
 				<div className="flex-none">
-					<StatusBox radar={radar} />
+					<StatusBox radarId={radarId} />
 				</div>
 
 				<div className="flex-1 overflow-auto min-h-0">
-					<ActivityBox radar={radar} />
+					<ActivityBox radarId={radarId} />
 				</div>
 			</div>
 		</div>

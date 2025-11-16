@@ -1,37 +1,32 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import RadarCard from "./RadarCard";
+import RadarListElement from "./RadarListElement";
+import { useRadar } from "../../hooks/useRadar";
 
 export default function RadarList() {
-	const [radarList, setRadarList] = useState(null);
+	const { radarList }  = useRadar();
 	const navigate = useNavigate();
 
-	useEffect(() => {
-		async function fetchRadarList() {
-			try {
-				const response = await fetch(`/api/radar/list`);
-				if (response.ok) {
-					const data = await response.json();
-					setRadarList(data?.radars);
-				}
-			} catch (err) {
-				console.error("Error getting radar list: ", err);
-			}
-		}
-		fetchRadarList();
-	}, []);
-
+	if (!radarList || radarList.length === 0) { 
+		return (
+			<div className="h-full flex items-center justify-center">
+				<p className="text-neutral-400 text-lg">No radars available.</p>
+			</div>
+		);	
+	}
+	
 	return (
 		<div className="max-w-5xl mx-auto p-8 space-y-4 h-full">
 			{radarList?.map((radar) => (
 				<div
 					key={radar.radar_id}
 					onClick={() =>
-						navigate(`/radar/${radar.radar_id}`, { state: { radar } })
+						navigate(`/radar/${radar.radar_id}`, {
+							state: { radarId: radar.radar_id },
+						})
 					}
 					className="cursor-pointer hover:opacity-80 transition"
 				>
-					<RadarCard radar={radar} />
+					<RadarListElement radarId={radar.radar_id} />
 				</div>
 			))}
 		</div>
