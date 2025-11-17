@@ -1,16 +1,20 @@
 from flask_socketio import emit
 import random
 import time
-from . import socketio
+
+from . import reader
+from . import socketio, queue
 
 background_task_started = False
 
 def background_thread():
+    global queue
+
     uptime = 0
     activity_log = [{}]
     prev_status = 'falling'
     while True:
-        status = random.choice(['standing', 'falling'])
+        status = queue.get_nowait() if not queue.empty() else prev_status
         people_count = random.randint(0, 5) if status == 'standing' else 1
         uptime += 1
 
@@ -27,13 +31,13 @@ def background_thread():
                 "is_connected": True,
                 "status": status,
                 "people_count": people_count,
-                "timestamp": "2024-06-01T12:00:00Z",
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "activity_log": activity_log[-5:],
                 "uptime": f"{uptime//86400}d {(uptime%86400)//3600}h {(uptime%3600)//60}m {uptime%60}s",
             }
         })
-        
-        socketio.sleep(1) 
+
+        socketio.sleep(0.1)
 
 @socketio.on('connect')
 def test_connect():
@@ -41,7 +45,9 @@ def test_connect():
     emit('my response', {'data': 'Connected'})
     
     if not background_task_started:
+        reader.send_cfg("COM7", "C:/Users/jaidenmagnan/github/Senior_Design_TI_Project/gui/server/flaskr/configs/config.cfg", "COM8")
         socketio.start_background_task(background_thread)
+        socketio.start_background_task(reader.read_uart, "COM7", "COM8")
         background_task_started = True
 
 @socketio.on('disconnect')

@@ -47,7 +47,6 @@ export default function StatusBox({ radarId }) {
 					<p className="text-5xl font-bold text-white">{radar.uptime}</p>
 				</div>
 
-				{/* People detected box */}
 				<div className="flex-1 border-2 border-gray-600 rounded-lg bg-bg3 p-6">
 					<p className="text-gray-400 text-lg ">People detected</p>
 					<p className="text-5xl font-bold text-white">{radar.people_count}</p>
