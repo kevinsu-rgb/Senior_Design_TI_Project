@@ -1,0 +1,20 @@
+Component Name : TCAN1042HGVDRQ1
+
+Part Count : 2
+
+Part : U?
+     Pins - (Normal) : 0
+          Hidden Pins : 
+
+Part : U?
+     Pins - (Normal) : 8
+          RXD            4              Passive
+          VCC            3              Passive
+          GND            2              Passive
+          TXD            1              Passive
+          STB            8              Passive
+          CANH           7              Passive
+          CANL           6              Passive
+          VIO            5              Passive
+          Hidden Pins : 
+
