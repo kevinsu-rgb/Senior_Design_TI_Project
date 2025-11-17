@@ -11,12 +11,12 @@ def background_thread():
     global queue
 
     uptime = 0
-    activity_log = [{}]
+    activity_log = []
     prev_status = 'falling'
+    start_time = time.time()
     while True:
         status = queue.get_nowait() if not queue.empty() else prev_status
         people_count = random.randint(0, 5) if status == 'standing' else 1
-        uptime += 1
 
         if status != prev_status:
             activity_log.append({
@@ -24,7 +24,9 @@ def background_thread():
                 "event": f"Status changed: {prev_status} → {status}"
             })
             prev_status = status
-        
+
+        uptime = int(time.time() - start_time)
+
         socketio.emit('radar_status_update',{
             "updates": {
                 "radar_id": 1,
@@ -37,7 +39,7 @@ def background_thread():
             }
         })
 
-        socketio.sleep(0.1)
+        socketio.sleep(0.5)
 
 @socketio.on('connect')
 def test_connect():
@@ -45,7 +47,8 @@ def test_connect():
     emit('my response', {'data': 'Connected'})
     
     if not background_task_started:
-        reader.send_cfg("COM7", "C:/Users/jaidenmagnan/github/Senior_Design_TI_Project/gui/server/flaskr/configs/config.cfg", "COM8")
+        # ignore this absolute path the paths are weird in electron, we can probably just put this in a .env or something
+        reader.send_cfg("COM7", "C:/Users/jaidenmagnan/github/Senior_Design_TI_Project/gui/server/flaskr/configs/default.cfg", "COM8")
         socketio.start_background_task(background_thread)
         socketio.start_background_task(reader.read_uart, "COM7", "COM8")
         background_task_started = True

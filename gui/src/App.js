@@ -1,11 +1,10 @@
 import logo from "./assets/logo.png";
 import "./App.css";
-import Navbar from "./Components/Navbar";
-import RadarList from "./Components/Radar/RadarList";
-import RadarPage from "./Components/Radar/RadarPage/RadarPage";
+import Navbar from "./components/Navbar";
+import RadarList from "./components/Radar/RadarList";
+import RadarPage from "./components/Radar/RadarPage/RadarPage";
 import RadarProvider from "./context/RadarProvider";
 import { Routes, Route } from "react-router-dom";
-import RadarWsHook from "./hooks/useRadar";
 
 function App() {
 	return (
