@@ -23,6 +23,9 @@ npx @biomejs/biome format ./src --write
 
 ![test](gui/assets/test.png)
 
+# mmWave PCB
+In Progress (Began adding and drawing schematic components)
+
 # Wall Mounted Housing
 ![mmRadar_Housing_Bottom](Radar_Housing/mmRadar_Housing_Bottom.png)
 
