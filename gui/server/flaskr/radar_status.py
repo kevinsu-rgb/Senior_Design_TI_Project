@@ -16,7 +16,7 @@ def background_thread():
     start_time = time.time()
     while True:
         status = queue.get_nowait() if not queue.empty() else prev_status
-        people_count = random.randint(0, 5) if status == 'standing' else 1
+        people_count = 1
 
         if status != prev_status:
             activity_log.append({
@@ -48,7 +48,7 @@ def test_connect():
     
     if not background_task_started:
         # ignore this absolute path the paths are weird in electron, we can probably just put this in a .env or something
-        reader.send_cfg("COM7", "C:/Users/jaidenmagnan/github/Senior_Design_TI_Project/gui/server/flaskr/configs/default.cfg", "COM8")
+        reader.send_cfg("COM7", "C:/Users/jaidenmagnan/github/Senior_Design_TI_Project/gui/server/flaskr/configs/AOP_6m_default.cfg", "COM8")
         socketio.start_background_task(background_thread)
         socketio.start_background_task(reader.read_uart, "COM7", "COM8")
         background_task_started = True

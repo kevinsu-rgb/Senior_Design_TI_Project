@@ -169,10 +169,11 @@ def read_uart(cli_port="COM7", data_port="COM8"):
 					if tlv_type == MMWDEMO_OUTPUT_MSG_TARGET_HEIGHT:
 						maxZ = struct.unpack('<f', tlv_data[4:8])[0]
 						minZ = struct.unpack('<f', tlv_data[8:12])[0]
-						status = "standing" if maxZ > 1.8 else "falling"
+						status = "standing" if (maxZ) > 1.6 else "falling"
+						#print(maxZ)
 
 						if prev_status != status:
-							print(f"Status changed: {prev_status} -> {status}")
+							#print(f"Status changed: {prev_status} -> {status}")
 							prev_status = status
 							if queue.qsize() < 10:
 								queue.put(status)
