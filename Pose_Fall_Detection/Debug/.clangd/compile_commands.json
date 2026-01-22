@@ -1,0 +1,12 @@
+[
+   {
+      "directory" : "C:/Users/Admin/workspace_ccstheia/Pose_Fall_Detection/Debug",
+      "command"   : "clang++ -I\"C:/ti/ti_cgt_tiarmclang_3.2.2.LTS/include/c\" -I\"C:/ti/MMWAVE_L_SDK_05_05_04_02/source\" -DSOC_XWRL64XX -D_DEBUG_=1 -isystem\"C:/ti/ti_cgt_tiarmclang_3.2.2.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ti_cgt_tiarmclang_3.2.2.LTS/include/c++/v1\" -isystem\"C:/ti/ti_cgt_tiarmclang_3.2.2.LTS/lib/clang/15.0.7/include\" -isystem\"C:/ti/ti_cgt_tiarmclang_3.2.2.LTS/include/c\" -I\"C:/Users/Admin/workspace_ccstheia/Pose_Fall_Detection/Debug/syscfg\" -xc",
+      "file"      : "C:/Users/Admin/workspace_ccstheia/Pose_Fall_Detection/empty.c"
+   },
+   {
+      "directory" : "C:/Users/Admin/workspace_ccstheia/Pose_Fall_Detection/Debug",
+      "command"   : "clang++ -I\"C:/ti/ti_cgt_tiarmclang_3.2.2.LTS/include/c\" -I\"C:/ti/MMWAVE_L_SDK_05_05_04_02/source\" -DSOC_XWRL64XX -D_DEBUG_=1 -isystem\"C:/ti/ti_cgt_tiarmclang_3.2.2.LTS/include/armv7em-ti-none-eabihf/c++/v1\" -isystem\"C:/ti/ti_cgt_tiarmclang_3.2.2.LTS/include/c++/v1\" -isystem\"C:/ti/ti_cgt_tiarmclang_3.2.2.LTS/lib/clang/15.0.7/include\" -isystem\"C:/ti/ti_cgt_tiarmclang_3.2.2.LTS/include/c\" -I\"C:/Users/Admin/workspace_ccstheia/Pose_Fall_Detection/Debug/syscfg\" -xc",
+      "file"      : "C:/Users/Admin/workspace_ccstheia/Pose_Fall_Detection/main.c"
+   }
+]
