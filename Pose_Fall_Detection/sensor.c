@@ -344,20 +344,25 @@ void populateDefaultCalibrationCfg (MMWave_CalibrationCfg* ptrCalibrationCfg)
     return;
 }
 
-void openSensor(){
-    populateDefaultOpenCfg (&openCfg);
-    
-    if (MMWave_open (sensorHandle, &openCfg, &errCode) < 0)
+static int32_t openSensor(void)
+{
+    memset(&openCfg, 0, sizeof(openCfg));
+    populateDefaultOpenCfg(&openCfg);
+
+    if (MMWave_open(sensorHandle, &openCfg, &errCode) < 0)
     {
-        // Error
-        DebugP_logError ("Error: Sensor open failed [Error code %d]\n", errCode);
-        MCPI_setFeatureTestResult ("Sensor Open", MCPI_TestResult_FAIL);
-        return;
+        DebugP_logError("Error: Sensor open failed [Error code %d]\n", errCode);
+        MCPI_setFeatureTestResult("Sensor Open", MCPI_TestResult_FAIL);
+        return -1;
     }
-   DebugP_logInfo("Sensor Open.\r\n");
+
+    MCPI_setFeatureTestResult("Sensor Open", MCPI_TestResult_PASS);
+    DebugP_logInfo("Sensor Open.\r\n");
+    return 0;
 }
 
-void configSensor(){
+
+int32_t configSensor(){
     populateDefaultChirpControlCfg (&ctrlCfg);
 
     if (MMWave_config (sensorHandle, &ctrlCfg, &errCode) < 0)
@@ -365,7 +370,7 @@ void configSensor(){
         // Error
         DebugP_logError ("Error: Sensor configuration failed [Error code %d]\n", errCode);
         MCPI_setFeatureTestResult ("Sensor Configuration", MCPI_TestResult_FAIL);
-        return;
+        return -1;
     }
     DebugP_logInfo("Sensor Config Success.\r\n");
 
@@ -377,19 +382,45 @@ void configSensor(){
     strtCfg.chirpStartSigLbEn = M_RL_SENS_CT_START_SIG_LB_DIS; // Disable LoopBack
     strtCfg.frameLivMonEn = 0; //Disable all Live Monitors
     strtCfg.frameTrigTimerVal = 0;
+    return 0;
 }
 
+int32_t initSensor(bool iswarmstart)
+{
+    MMWave_InitCfg initCfg;
+    MMWave_ErrorLevel errorLevel;
+    int16_t mmWaveErrorCode;
+    int16_t subsysErrorCode;
 
-void startSensor(){
+    memset(&initCfg, 0, sizeof(MMWave_InitCfg));
+    initCfg.iswarmstart = iswarmstart;
+
+    sensorHandle = MMWave_init(&initCfg, &errCode);
+    if (sensorHandle == NULL)
+    {
+        MMWave_decodeError(errCode, &errorLevel, &mmWaveErrorCode, &subsysErrorCode);
+        DebugP_logError(
+            "Error: mmWave init failed [Error %d] [level %d] [mmWave %d] [subsys %d]\r\n",
+            errCode, errorLevel, mmWaveErrorCode, subsysErrorCode
+        );
+        return SystemP_FAILURE;
+    }
+
+    DebugP_logInfo("mmWave init OK\r\n");
+    return SystemP_SUCCESS;
+}
+
+int32_t startSensor(){
     if (MMWave_start (sensorHandle, &calibrationCfg,&strtCfg, &errCode) < 0)
     {
         // Error
         DebugP_logError ("Error: Sensor start failed [Error code %d]\n", errCode);
         MCPI_setFeatureTestResult ("Sensor Start", MCPI_TestResult_FAIL);
-        return;
+        return -1;
     }
    
     DebugP_logInfo  ("Sensor started.\r\n");
+    return 0;
 }
 
 void stopSensor(){
@@ -431,34 +462,49 @@ void deInitSensor(){
         MCPI_setFeatureTestResult ("Sensor Deinitialized", MCPI_TestResult_FAIL);
         return;
     }
+    DebugP_logInfo ("Sensor deinit done.\r\n");
     MCPI_setFeatureTestResult ("Sensor Deinitialized", MCPI_TestResult_PASS);
     return;
-    DebugP_logInfo ("Sensor deinit done.\r\n");
 }
 
-void executeSensor()
+void executeSensor(void)
 {
-
-    if (MMWave_execute (sensorHandle, &errCode) < 0)
-        DebugP_logError ("Error: mmWaSensor control execution failed [Error code %d]\n", errCode);
-    
+    if (MMWave_execute(sensorHandle, &errCode) < 0)
+    {
+        DebugP_logError("Error: mmWave control execution failed [Error code %d]\n", errCode);
+    }
 }
 
-void testSensor(){
-    
+void testSensor(void)
+{
     MCPI_Initialize();
 
-    openSensor();
-    configSensor();
-    startSensor();
+    bool inited = false;
+    bool opened = false;
+    bool started = false;
+
+    if (initSensor(false) != SystemP_SUCCESS)
+    {
+        return;
+    }
+    inited = true;
+
+    if (openSensor() < 0) goto cleanup;
+    opened = true;
+
+    if (configSensor() < 0) goto cleanup;
+
+    if (startSensor() < 0) goto cleanup;
+    started = true;
+
     uint32_t start = ClockP_getTimeUsec();
-    while(1){
+    while ((ClockP_getTimeUsec() - start) <= 1000U * 1000U)
+    {
         executeSensor();
-        if ((ClockP_getTimeUsec() - start) > 1000*1000) break;
     }
 
-    stopSensor();
-    closeSensor();
-    deInitSensor();
-
+cleanup:
+    if (started)  stopSensor();
+    if (opened)   closeSensor();
+    if (inited)   deInitSensor();
 }
