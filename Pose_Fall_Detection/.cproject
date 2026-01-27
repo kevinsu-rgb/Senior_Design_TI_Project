@@ -33,7 +33,7 @@
                             </option>
                             <option id="com.ti.ccstudio.buildDefinitions.core.OPT_CODEGEN_VERSION.201028645" superClass="com.ti.ccstudio.buildDefinitions.core.OPT_CODEGEN_VERSION" value="TICLANG_3.2.2.LTS" valueType="string"/>
                             <targetPlatform id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.exe.targetPlatformDebug.480041383" name="Platform" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.exe.targetPlatformDebug"/>
-                            <builder buildPath="${BuildDirectory}" id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.exe.builderDebug.1827123801" name="GNU Make.Debug" parallelBuildOn="true" parallelizationNumber="optimal" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.exe.builderDebug"/>
+                            <builder buildPath="${BuildDirectory}" id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.exe.builderDebug.1827123801" keepEnvironmentInBuildfile="false" name="GNU Make" parallelBuildOn="true" parallelizationNumber="optimal" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.exe.builderDebug"/>
                             <tool id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.exe.compilerDebug.260975463" name="Arm Compiler" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.exe.compilerDebug">
                                 <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.compilerID.GENERATE_DWARF_DEBUG.1757130128" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.compilerID.GENERATE_DWARF_DEBUG" value="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.compilerID.GENERATE_DWARF_DEBUG.G_LOWERCASE" valueType="enumerated"/>
                                 <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.compilerID.ENDIAN_NESS__BIG_LITTLE.265728487" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.compilerID.ENDIAN_NESS__BIG_LITTLE" value="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.compilerID.ENDIAN_NESS__BIG_LITTLE.MLITTLE_ENDIAN" valueType="enumerated"/>
@@ -42,6 +42,7 @@
                                     <listOptionValue value="${COM_TI_MMWAVE_L_SDK_INCLUDE_PATH}"/>
                                     <listOptionValue value="${CG_TOOL_ROOT}/include/c"/>
                                     <listOptionValue value="${MCU_PLUS_SDK_PATH}/source"/>
+                                    <listOptionValue value="${MMW_DFP_PATH}"/>
                                 </option>
                                 <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.compilerID.DEFINE.1152248288" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.compilerID.DEFINE" valueType="definedSymbols">
                                     <listOptionValue value="${SYSCONFIG_TOOL_SYMBOLS}"/>
@@ -58,6 +59,9 @@
                                     <listOptionValue value="gnu-variable-sized-type-not-at-end"/>
                                     <listOptionValue value="unused-function"/>
                                 </option>
+                                <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.compilerID.OTHER_FLAGS.759346666" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.compilerID.OTHER_FLAGS" valueType="stringList">
+                                    <listOptionValue value=""/>
+                                </option>
                             </tool>
                             <tool id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.exe.linkerDebug.2042547001" name="Arm Linker" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.exe.linkerDebug">
                                 <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.linkerID.OUTPUT_FILE.33372596" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.linkerID.OUTPUT_FILE" value="${ProjName}.out" valueType="string"/>
@@ -71,7 +75,11 @@
                                     <listOptionValue value="${COM_TI_MMWAVE_L_SDK_LIBRARY_PATH}"/>
                                     <listOptionValue value="${MCU_PLUS_SDK_PATH}/source/kernel/nortos/lib"/>
                                     <listOptionValue value="${MCU_PLUS_SDK_PATH}/source/drivers/lib"/>
-                                    <listOptionValue value="${CG_TOOL_ROOT}/lib"/>
+                                    <listOptionValue value="${MMW_DFP_PATH}/fecsslib/lib/xWRLx432"/>
+                                    <listOptionValue value="C:/ti/MMWAVE_L_SDK_05_05_04_02/source/board/lib"/>
+                                    <listOptionValue value="C:/ti/MMWAVE_L_SDK_05_05_04_02/source/control/lib"/>
+                                    <listOptionValue value="C:/ti/MMWAVE_L_SDK_05_05_04_02/source/utils/lib"/>
+                                    <listOptionValue value="${MMW_DFP_PATH}/mmwavelink/lib/xWRLx432"/>
                                 </option>
                                 <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.linkerID.LIBRARY.1580852458" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.linkerID.LIBRARY" valueType="libs">
                                     <listOptionValue value="${SYSCONFIG_TOOL_LIBRARIES}"/>
@@ -79,8 +87,17 @@
                                     <listOptionValue value="nortos.xwrL64xx.m4f.ti-arm-clang.debug.lib"/>
                                     <listOptionValue value="drivers.xwrL64xx.m4f.ti-arm-clang.debug.lib"/>
                                     <listOptionValue value="libc.a"/>
+                                    <listOptionValue value="board.xwrL64xx.m4f.ti-arm-clang.debug.lib"/>
+                                    <listOptionValue value="control.xwrL64xx.m4f.ti-arm-clang.debug.lib"/>
+                                    <listOptionValue value="utils.xwrL64xx.m4f.ti-arm-clang.debug.lib"/>
+                                    <listOptionValue value="mmwavelink_m4.lib"/>
+                                    <listOptionValue value="fecss_rom_m4.lib"/>
+                                    <listOptionValue value="fecss_patch_m4.lib"/>
                                 </option>
                                 <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.linkerID.INITIALIZATION_MODEL.372429057" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.linkerID.INITIALIZATION_MODEL" value="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.linkerID.INITIALIZATION_MODEL.RAM_MODEL" valueType="enumerated"/>
+                                <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.linkerID.OTHER_FLAGS.353212074" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.linkerID.OTHER_FLAGS" valueType="stringList">
+                                    <listOptionValue value="-Wl, -Wl-i&quot;${CG_TOOL_ROOT}/lib&quot;,"/>
+                                </option>
                             </tool>
                             <tool id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.hex.636808197" name="Arm Hex Utility" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.hex"/>
                             <tool id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.objcopy.1601225937" name="Arm Objcopy Utility" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_3.2.objcopy"/>

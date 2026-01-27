@@ -9,7 +9,6 @@ This file is the data path control logic. Uses rangeproc(rangefft), dopplerproc(
 and doaproc(range-azimuth heatmap). 
 */
 
-#include "dpu.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -48,16 +47,28 @@ DPU_RangeProcHWA_Config rangeProcCfg;
 DPU_DopplerProcHWA_Config dopplerProcCfg;
 DPU_DoaProc_Config doaProcCfg;
 
+typedef struct Radar_Params_t {
+    uint8_t  numTxAntennas;
+    uint8_t  numRxAntennas;
+    uint16_t numAdcSamples;
+    uint8_t  numVirtualAntennas;
+    uint16_t numRangeBins;
+    uint16_t rangeFftSize;
+    uint16_t numDopplerChirps;
+    uint16_t numDopplerBins;
+} Radar_Params_t;
 
-Radar_Params_t radarParams;
-radarParams.numTxAntennas      = 2;
-radarParams.numRxAntennas      = 3;
-radarParams.numVirtualAntennas = 6;  
-radarParams.numAdcSamples      = 256;
-radarParams.rangeFftSize       = 256;
-radarParams.numRangeBins       = 128; 
-radarParams.numDopplerChirps   = 64;  
-radarParams.numDopplerBins     = 64;
+
+static Radar_Params_t radarParams = {
+    .numTxAntennas      = 2,
+    .numRxAntennas      = 3,
+    .numVirtualAntennas = 6,
+    .numAdcSamples      = 256,
+    .rangeFftSize       = 256,
+    .numRangeBins       = 128,
+    .numDopplerChirps   = 64,
+    .numDopplerBins     = 64
+};
 
 
 #define EDMA_CH_RANGE_IN        0
@@ -85,7 +96,7 @@ int32_t rangeProcCfgParser(){
     params->ADCBufData.dataProperty.numRxAntennas = radarParams.numRxAntennas;
     params->ADCBufData.dataProperty.dataFmt       = DPIF_DATAFORMAT_REAL16; 
     params->ADCBufData.dataProperty.interleave    = DPIF_RXCHAN_NON_INTERLEAVE_MODE;
-    params->ADCBufData.data                       = (void *)ADC_BUFFER_ADDRESS;
+    params->ADCBufData.data                       = (void *)CSL_APP_HWA_ADCBUF_RD_U_BASE;
     params->ADCBufData.dataSize                   = radarParams.numAdcSamples * radarParams.numRxAntennas * 4; 
 
     // Calculate RX offsets 
@@ -96,7 +107,7 @@ int32_t rangeProcCfgParser(){
 
         
     /* Radar Cube Output (L3) */
-    HwConfig->radarCube.data      = RadarCube;
+    HwConfig->radarCube.data      = radarCube;
     HwConfig->radarCube.dataSize  = radarParams.numRangeBins * radarParams.numVirtualAntennas * radarParams.numDopplerChirps * sizeof(cmplx16ImRe_t);;
     HwConfig->radarCube.datafmt   = DPIF_RADARCUBE_FORMAT_6; 
 
