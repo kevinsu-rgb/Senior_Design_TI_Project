@@ -1,0 +1,13 @@
+Debug/
+
+targetConfigs/
+
+.ccsproject
+
+.clangd
+
+.cproject
+
+.project
+
+.settings

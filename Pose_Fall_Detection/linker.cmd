@@ -28,6 +28,7 @@ SECTIONS
     .rodata: {} align(8) >> M4F_RAM12 | M4F_RAM3     /* This is where const's go */
     .sysmem: {} palign(8) > M4F_RBL     /* This is where the malloc heap goes */
     .stack:  {} palign(8) > M4F_RBL     /* This is where the main() stack goes */
+    .taskstack {} palign(8) > M4F_RBL    /* This memory region can be used for task stacks */
     .l3:     {} palign(8) > HWASS_SHM_MEM     /* This is where L3 data goes */
 }
 
