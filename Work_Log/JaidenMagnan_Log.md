@@ -5,3 +5,4 @@
 ### 1/20->1/27: Total 14 hours.
 - Research on PyTorch Datasets and Dataloaders (3 hours.)
 - Work on notebook setup with PyTorch (3 hours.)
+- Notebook setup working with sample data (3 hours.)
