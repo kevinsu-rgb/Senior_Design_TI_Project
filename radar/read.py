@@ -4,6 +4,8 @@ import glob
 import struct
 import numpy as np
 
+import queue
+
 
 # returns the baud rate the config is using
 def send_cfg(cfg_path: str, cli_baud_rate: int, cli_port: str) -> int:
@@ -114,9 +116,16 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                         heatmap_2d = np.array(heatmap_data).reshape(
                             NUM_RANGE_BINS, NUM_AZIMUTH_BINS
                         )
+
+                        # lets push this heatmap to a queue
+
                         print(heatmap_2d)
 
                 buffer = buffer[magic_index + 40 :]
+
+
+def save_csv():
+    global queue
 
 
 def check(data_port: str, data_baud_rate: int):
