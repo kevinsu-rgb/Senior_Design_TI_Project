@@ -3,8 +3,18 @@ import time
 import glob
 import struct
 import numpy as np
+import threading
+import torch
+from nn import NeuralNetwork
 
 import queue
+
+q: queue.Queue[np.ndarray[tuple[int, int], np.dtype[np.int64]]] = queue.Queue(1)
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model = NeuralNetwork().to(device)
+model.load_state_dict(torch.load("model.pth", map_location=device))
+model.eval()
 
 
 # returns the baud rate the config is using
@@ -62,7 +72,6 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
         buffer.extend(data)
 
         magic_index = buffer.find(MAGIC_WORD)
-        print(data)
 
         # weve detected the magic index
         if magic_index != -1:
@@ -97,9 +106,9 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                     tlv_data = buffer[tlv_offset + 8 : tlv_offset + 8 + tlv_length]
                     tlv_offset += tlv_length + 8
 
-                    print(
-                        f"TLV Type: {tlv_type}, Length: {tlv_length}, Data: {tlv_data}"
-                    )
+                    # print(
+                    #    f"TLV Type: {tlv_type}, Length: {tlv_length}, Data: {tlv_data}"
+                    # )
 
                     # HEATMAP_TLV = 304
                     HEATMAP_TLV = 304
@@ -117,15 +126,44 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                             NUM_RANGE_BINS, NUM_AZIMUTH_BINS
                         )
 
-                        # lets push this heatmap to a queue
+                        print(heatmap_2d.ndim)
 
-                        print(heatmap_2d)
+                        # lets push this heatmap to a queue, the max size of the queue is 1 but if it is full we do not put the data.
+                        # print(heatmap_2d)
+                        try:
+                            q.put_nowait(heatmap_2d)
+                        except queue.Full:
+                            continue
 
                 buffer = buffer[magic_index + 40 :]
 
 
 def save_csv():
-    global queue
+    global q
+
+    i = 0
+    while True:
+        heatmap = q.get()
+        filename = f"data/{i}.csv"
+        np.savetxt(filename, heatmap, delimiter=",", dtype=np.float64)
+        print(f"csv {filename} saved.")
+        i += 1
+
+
+def predict():
+    CLASS_NAMES = ["FALLING", "SITTING", "STANDING", "WALKING"]
+
+    while True:
+        heatmap_2d = q.get()
+
+        input_tensor = torch.from_numpy(heatmap_2d).float().unsqueeze(0).to(device)
+
+        with torch.no_grad():
+            logits = model(input_tensor)
+            prediction = torch.argmax(logits, dim=1).item()
+
+        print(f"Detected Class: {CLASS_NAMES[int(prediction)]}")
+        q.task_done()
 
 
 def check(data_port: str, data_baud_rate: int):
@@ -166,8 +204,18 @@ def main():
     reset_ports()
     _ = send_cfg("config.cfg", cli_baud_rate, cli_port)
 
-    read_uart("", data_port, 1250000)
+    start_p = lambda: read_uart("", data_port, 1250000)
+
+    pt = threading.Thread(target=start_p, name="read uart")
+    ct = threading.Thread(target=predict, name="predict data", daemon=True)
+
+    # read_uart("", data_port, 1250000)
     # check(data_port, 1250000)
+    #
+    pt.start()
+    ct.start()
+
+    pt.join()
 
 
 main()

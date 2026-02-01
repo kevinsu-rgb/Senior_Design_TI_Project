@@ -6,6 +6,9 @@
 - Research on PyTorch Datasets and Dataloaders (3 hours.)
 - Work on notebook setup with PyTorch (3 hours.)
 - Notebook setup working with sample data (3 hours.)
-### 1/27->2/06: Total 21 hours.
+### 1/27->2/06: Total 32 hours.
 - Try to read UART data from new radar (6 hours.)
 - Additional call with Pedhrom on this reading (1 hour.)
+- Read UART and save CSVs from heatmap data (2 hours.)
+- Spend time collecting sample data (4 hours.)
+- Connect ML model with UART reader (5 hours.)
