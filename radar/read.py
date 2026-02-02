@@ -111,16 +111,29 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
                     NUM_RANGE_BINS = 128
                     NUM_AZIMUTH_BINS = 8
+                    alpha = 0.05
+                    background_avg = np.zeros(
+                        (NUM_RANGE_BINS, NUM_AZIMUTH_BINS), dtype=np.float32
+                    )
 
                     if tlv_type == HEATMAP_TLV:
                         expected_size = 4 * NUM_RANGE_BINS * NUM_AZIMUTH_BINS
                         num_elements = NUM_RANGE_BINS * NUM_AZIMUTH_BINS
-                        heatmap_data = struct.unpack(
-                            f"<{num_elements}I", tlv_data[:expected_size]
+                        # heatmap_data = struct.unpack(
+                        #    f"<{num_elements}I", tlv_data[:expected_size]
+                        # )
+                        # heatmap_2d = np.array(heatmap_data, dtype=np.float32).reshape(
+                        #    NUM_RANGE_BINS, NUM_AZIMUTH_BINS
+                        # )
+                        current_frame = np.frombuffer(
+                            tlv_data[:expected_size], dtype=np.uint32
+                        ).reshape(NUM_RANGE_BINS, NUM_AZIMUTH_BINS)
+                        current_frame = current_frame.astype(np.float32)
+
+                        background_avg = ((1.0 - alpha) * background_avg) + (
+                            alpha * current_frame
                         )
-                        heatmap_2d = np.array(heatmap_data, dtype=np.float32).reshape(
-                            NUM_RANGE_BINS, NUM_AZIMUTH_BINS
-                        )
+                        heatmap_2d = np.maximum(current_frame - background_avg, 0)
 
                         # lets push this heatmap to a queue, the max size of the queue is 1 but if it is full we do not put the data.
                         # print(heatmap_2d)
@@ -134,12 +147,11 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
 def predict():
     CLASS_NAMES = ["SITTING", "STANDING"]
-    last_idx = -1
 
-    record = True
-    record_pose = "AZIMUTH_MAJOR"
+    record = False
+    record_pose = "SITTING"
 
-    i = 700
+    i = 0
     while True:
         heatmap_raw = q.get()
 
@@ -161,10 +173,7 @@ def predict():
 
             p_idx = torch.argmax(logits, dim=1).item()
 
-        if p_idx != last_idx:
-            conf = torch.softmax(logits, dim=1).max().item()
-            print(f"Detected: {CLASS_NAMES[p_idx]} | Confidence: {conf:.2%}")
-            last_idx = p_idx
+            print(f"Detected: {p_idx}")
 
 
 def check(data_port: str, data_baud_rate: int):
