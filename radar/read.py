@@ -9,12 +9,7 @@ from nn import NeuralNetwork
 
 import queue
 
-q: queue.Queue[np.ndarray[tuple[int, int], np.dtype[np.int64]]] = queue.Queue(1)
-
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model = NeuralNetwork().to(device)
-model.load_state_dict(torch.load("model.pth", map_location=device))
-model.eval()
+q: queue.Queue[np.ndarray[tuple[int, int], np.dtype[np.float32]]] = queue.Queue(1)
 
 
 # returns the baud rate the config is using
@@ -112,8 +107,9 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
                     # HEATMAP_TLV = 304
                     HEATMAP_TLV = 304
+                    # HEATMAP_TLV = 305
 
-                    NUM_RANGE_BINS = 64
+                    NUM_RANGE_BINS = 128
                     NUM_AZIMUTH_BINS = 8
 
                     if tlv_type == HEATMAP_TLV:
@@ -122,11 +118,9 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                         heatmap_data = struct.unpack(
                             f"<{num_elements}I", tlv_data[:expected_size]
                         )
-                        heatmap_2d = np.array(heatmap_data).reshape(
+                        heatmap_2d = np.array(heatmap_data, dtype=np.float32).reshape(
                             NUM_RANGE_BINS, NUM_AZIMUTH_BINS
                         )
-
-                        print(heatmap_2d.ndim)
 
                         # lets push this heatmap to a queue, the max size of the queue is 1 but if it is full we do not put the data.
                         # print(heatmap_2d)
@@ -138,32 +132,39 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                 buffer = buffer[magic_index + 40 :]
 
 
-def save_csv():
-    global q
-
-    i = 0
-    while True:
-        heatmap = q.get()
-        filename = f"data/{i}.csv"
-        np.savetxt(filename, heatmap, delimiter=",", dtype=np.float64)
-        print(f"csv {filename} saved.")
-        i += 1
-
-
 def predict():
-    CLASS_NAMES = ["FALLING", "SITTING", "STANDING", "WALKING"]
+    CLASS_NAMES = ["SITTING", "STANDING"]
+    last_idx = -1
 
+    record = True
+    record_pose = "AZIMUTH_MAJOR"
+
+    i = 700
     while True:
-        heatmap_2d = q.get()
-
-        input_tensor = torch.from_numpy(heatmap_2d).float().unsqueeze(0).to(device)
+        heatmap_raw = q.get()
 
         with torch.no_grad():
-            logits = model(input_tensor)
-            prediction = torch.argmax(logits, dim=1).item()
+            input_tensor = torch.from_numpy(heatmap_raw).to(device, dtype=torch.float32)
 
-        print(f"Detected Class: {CLASS_NAMES[int(prediction)]}")
-        q.task_done()
+            t_min, t_max = input_tensor.min(), input_tensor.max()
+            input_tensor = (input_tensor - t_min) / (t_max - t_min + 1e-8)
+
+            if record:
+                timestamp = int(time.time() * 1000)
+                filepath = f"training/{record_pose}/{i}_frame_{timestamp}.csv"
+                np.savetxt(filepath, input_tensor.cpu().numpy(), delimiter=",")
+                print(filepath)
+                i += 1
+
+            input_tensor = input_tensor.view(1, 1, 128, 8)
+            logits = model(input_tensor)
+
+            p_idx = torch.argmax(logits, dim=1).item()
+
+        if p_idx != last_idx:
+            conf = torch.softmax(logits, dim=1).max().item()
+            print(f"Detected: {CLASS_NAMES[p_idx]} | Confidence: {conf:.2%}")
+            last_idx = p_idx
 
 
 def check(data_port: str, data_baud_rate: int):
@@ -217,5 +218,10 @@ def main():
 
     pt.join()
 
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model = NeuralNetwork().to(device)
+model.load_state_dict(torch.load("model.pth", map_location=device))
+model.eval()
 
 main()
