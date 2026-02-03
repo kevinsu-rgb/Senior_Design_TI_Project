@@ -1,6 +1,6 @@
-from flask_socketio import emit
-import random
+import os
 import time
+from flask_socketio import emit
 
 from . import reader
 from . import socketio, queue
@@ -13,11 +13,23 @@ def background_thread():
 
     uptime = 0
     activity_log = []
-    prev_status = "falling"
+    prev_status = "unknown"
+    prev_ml_idx = None
     start_time = time.time()
     while True:
-        # TODO: HOOK UP THE NEW READ.PY WITH ML MODEL WITH THIS QUEUE
-        status = queue.get_nowait() if not queue.empty() else prev_status
+        # ML inference dict format: {"status": "sitting"|"standing", ...}
+        status_update = None
+        # Drain queue to most recent update
+        while not queue.empty():
+            status_update = queue.get_nowait()
+
+        status = prev_status
+        ml_idx = prev_ml_idx
+        if isinstance(status_update, dict):
+            status = status_update.get("status", prev_status)
+            ml_idx = status_update.get("ml_idx", prev_ml_idx)
+        elif isinstance(status_update, str):
+            status = status_update
         people_count = 1
 
         if status != prev_status:
@@ -28,6 +40,7 @@ def background_thread():
                 }
             )
             prev_status = status
+            prev_ml_idx = ml_idx
 
         uptime = int(time.time() - start_time)
 
@@ -38,6 +51,7 @@ def background_thread():
                     "radar_id": 1,
                     "is_connected": True,
                     "status": status,
+                    "ml_idx": ml_idx,
                     "people_count": people_count,
                     "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                     "activity_log": activity_log[-5:],
@@ -55,14 +69,12 @@ def test_connect():
     emit("my response", {"data": "Connected"})
 
     if not background_task_started:
-        # ignore this absolute path the paths are weird in electron, we can probably just put this in a .env or something
-        reader.send_cfg(
-            "COM7",
-            "C:/Users/jaidenmagnan/github/Senior_Design_TI_Project/gui/server/flaskr/configs/AOP_6m_default.cfg",
-            "COM8",
-        )
         socketio.start_background_task(background_thread)
-        socketio.start_background_task(reader.read_uart, "COM7", "COM8")
+
+        # send cfg and start streaming automatically on first GUI connect
+        radar_port = os.getenv("RADAR_PORT", "COM5")
+        socketio.start_background_task(reader.start_pipeline_with_config, radar_port)
+        socketio.start_background_task(reader.predict_loop)
         background_task_started = True
 
 
