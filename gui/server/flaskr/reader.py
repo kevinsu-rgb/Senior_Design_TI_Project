@@ -1,188 +1,254 @@
-import serial
-import random
-import numpy as np
-import struct
 import os
+import sys
 import time
 from contextlib import suppress
+from pathlib import Path
+import queue as pyqueue
+import struct
+
+import numpy as np
+import serial
+import torch
+
 from . import queue
 
-def send_cfg(cli_port, cfg_path, data_port=None, device="xWR6843", single_com=False, cli_baud=115200):
+MAGIC_WORD = b"\x02\x01\x04\x03\x06\x05\x08\x07"
 
-	# Read cfg file
-	if not os.path.isfile(cfg_path):
-		print("cfg file not found: %s", cfg_path)
-		return 2
+HEATMAP_TLV = 304
+NUM_RANGE_BINS = 128
+NUM_AZIMUTH_BINS = 8
+HEATMAP_BYTES = 4 * NUM_RANGE_BINS * NUM_AZIMUTH_BINS
 
-	with open(cfg_path, "r", encoding="utf-8", errors="replace") as fh:
-		cfg_lines = fh.readlines()
-
-	# Clean lines similar to GUI: remove blank lines, ensure trailing newline, remove commented lines
-	cfg = [line for line in cfg_lines if line != '\n']
-	cfg = [line + '\n' if not line.endswith('\n') else line for line in cfg]
-	cfg = [line for line in cfg if line.strip() and not line.lstrip().startswith('%')]
-
-	cli = None
-	data = None
-	is_low_power = False
-	try:
-		if single_com:
-			# Single COM devices open CLI at requested baud
-			cli = serial.Serial(cli_port, cli_baud, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=0.6)
-			cli.reset_output_buffer()
-			is_low_power = True
-		else:
-			# Double COM: CLI at 115200, DATA at device-specific baud
-			cli = serial.Serial(cli_port, 115200, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=0.6)
-			if device == "xWRL6844":
-				data = serial.Serial(data_port, 1250000, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=0.6)
-			else:
-				data = serial.Serial(data_port, 921600, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=0.6)
-			data.reset_output_buffer()
-			cli.reset_output_buffer()
-			is_low_power = False
-	except Exception as e:
-		print("Failed to open serial ports: %s", e)
-		with suppress(Exception):
-			if cli is not None:
-				cli.close()
-		with suppress(Exception):
-			if data is not None:
-				data.close()
-		return 4
-
-	# Send lines
-	try:
-		for line in cfg:
-			time.sleep(.03)
-
-			if cli.baudrate == 1250000:
-				for char in [*line]:
-					time.sleep(.001)
-					cli.write(char.encode())
-			else:
-				cli.write(line.encode())
-
-			ack = cli.readline()
-			if len(ack) == 0:
-				print("ERROR: No data detected on COM Port, read timed out")
-				print("\tBe sure that the device is in the proper SOP mode after flashing with the correct binary, and that the cfg you are sending is valid")
-				return 5
-
-			print(ack, flush=True)
-
-			ack = cli.readline()
-			print(ack, flush=True)
-
-			if is_low_power:
-				ack = cli.readline()
-				print(ack, flush=True)
-				ack = cli.readline()
-				print(ack, flush=True)
-
-			splitLine = line.split()
-			if splitLine and splitLine[0] == "baudRate":
-				try:
-					cli.baudrate = int(splitLine[1])
-				except Exception:
-					print("Error - Invalid baud rate: %s" % (splitLine[1] if len(splitLine) > 1 else None))
-					with suppress(Exception):
-						cli.close()
-					with suppress(Exception):
-						if data is not None:
-							data.close()
-					return 6
-
-		# Give buffer time to clear
-		time.sleep(0.03)
-		with suppress(Exception):
-			cli.reset_input_buffer()
-		return 0
-	except Exception as e:
-		print("Failed while sending cfg: %s" % e)
-		return 7
-	finally:
-		with suppress(Exception):
-			if cli is not None:
-				cli.close()
-		with suppress(Exception):
-			if data is not None:
-				data.close()
-
-MAGIC_WORD = b'\x02\x01\x04\x03\x06\x05\x08\x07'
-prev_status = 'falling'
-def read_uart(cli_port="COM7", data_port="COM8"):
-	global prev_status
-	global queue
-	ser = serial.Serial(data_port, baudrate=921600)
-	print("READING")
-
-	buffer = bytearray()
-
-	while True:
-		bytecount = ser.in_waiting
-
-		if bytecount <= 0:
-			continue
-
-		data = ser.read(bytecount)
-		buffer.extend(data)
-
-		magic_index = buffer.find(MAGIC_WORD)
-
-		# weve detected the magic index
-		if magic_index != -1:
-			if magic_index > 0:
-				buffer = buffer[magic_index:]
-				magic_index = 0
-
-			if len(buffer) >= 40:
-
-				# read in our frame header
-				frame_header_raw = buffer[:40]
-				num_tlvs = int.from_bytes(frame_header_raw[32:36], byteorder='little')
-				frame_num = int.from_bytes(frame_header_raw[20:24], byteorder='little')
-				total_packet_len = int.from_bytes(frame_header_raw[12:16], byteorder='little')
-
-				tlv_offset = 40
-
-				# make sure we have enought data in our buffer to read all the tlvs
-				while len(buffer) < total_packet_len:
-					bytecount = ser.in_waiting
-					if bytecount > 0:
-						data = ser.read(bytecount)
-						buffer.extend(data)
-
-				for i in range(num_tlvs):
-					tlv_header_raw = buffer[tlv_offset:tlv_offset + 8]
-					tlv_type = int.from_bytes(tlv_header_raw[0:4], byteorder='little')
-					tlv_length = int.from_bytes(tlv_header_raw[4:8], byteorder='little')
-
-					tlv_data = buffer[tlv_offset + 8:tlv_offset + 8 + tlv_length]
-					tlv_offset += tlv_length + 8
-
-					#print(f"TLV Type: {tlv_type}, Length: {tlv_length}, Data: {tlv_data}")
-
-					MMWDEMO_OUTPUT_MSG_PRESCENCE_INDICATION = 1021
-					MMWDEMO_OUTPUT_MSG_TARGET_HEIGHT = 1012
-					
-					if tlv_type == MMWDEMO_OUTPUT_MSG_TARGET_HEIGHT:
-						maxZ = struct.unpack('<f', tlv_data[4:8])[0]
-						minZ = struct.unpack('<f', tlv_data[8:12])[0]
-						status = "standing" if (maxZ) > 1.6 else "falling"
-						#print(maxZ)
-
-						if prev_status != status:
-							#print(f"Status changed: {prev_status} -> {status}")
-							prev_status = status
-							if queue.qsize() < 10:
-								queue.put(status)
-							else:
-								print("Queue full, dropping status update")
-          
-					elif tlv_type == MMWDEMO_OUTPUT_MSG_PRESCENCE_INDICATION:
-						pass
-
-				buffer = buffer[magic_index + 40:]
+# keep only the most recent heatmap frame
+heatmap_queue: "pyqueue.Queue[np.ndarray]" = pyqueue.Queue(maxsize=1)
 
 
+def _ensure_repo_root_on_path() -> Path:
+    # add the repo root to the path
+    repo_root = Path(__file__).resolve().parents[3]
+    repo_root_str = str(repo_root)
+    if repo_root_str not in sys.path:
+        sys.path.insert(0, repo_root_str)
+    return repo_root
+
+
+def _load_model():
+    repo_root = _ensure_repo_root_on_path()
+
+    from radar.nn import NeuralNetwork
+
+    model_path = repo_root / "radar" / "model.pth"
+    model = NeuralNetwork()
+    model.load_state_dict(torch.load(model_path, map_location="cpu"))
+    model.eval()
+    return model
+
+
+def _read_cfg_lines(cfg_path: Path) -> list[str]:
+    # prune blank lines and comments and keep ordering
+    lines = []
+    with cfg_path.open("r", encoding="utf-8", errors="replace") as f:
+        for raw in f:
+            line = raw.strip()
+            if not line:
+                continue
+            if line.startswith("%"):
+                continue
+            lines.append(line)
+    return lines
+
+
+def send_cfg_single_com(port: str, cfg_path: str, initial_baud: int = 115200) -> int:
+    repo_root = _ensure_repo_root_on_path()
+    resolved_cfg = Path(cfg_path)
+    if not resolved_cfg.is_absolute():
+        resolved_cfg = (repo_root / resolved_cfg).resolve()
+
+    cfg_lines = _read_cfg_lines(resolved_cfg)
+
+    baud = int(initial_baud)
+    # use short timeouts to not hang waiting on responses
+    cli = serial.Serial(port, baud, timeout=0.1, write_timeout=0.5)
+    try:
+        with suppress(Exception):
+            cli.reset_output_buffer()
+        with suppress(Exception):
+            cli.reset_input_buffer()
+
+        # activate cli
+        with suppress(Exception):
+            cli.write(b"\n\n")
+        time.sleep(0.05)
+
+        # send chars 1 by 1
+        char_delay_s = float(os.getenv("RADAR_CLI_CHAR_DELAY_S", "0.001"))
+        line_delay_s = float(os.getenv("RADAR_CLI_LINE_DELAY_S", "0.02"))
+
+        for line in cfg_lines:
+            payload = (line + "\n").encode("utf-8", errors="ignore")
+            for b in payload:
+                with suppress(Exception):
+                    cli.write(bytes([b]))
+                time.sleep(char_delay_s)
+            time.sleep(line_delay_s)
+
+            # check for responses
+            with suppress(Exception):
+                n = cli.in_waiting
+                if n:
+                    _ = cli.read(n)
+
+            # baudRate
+            parts = line.split()
+            if parts and parts[0] == "baudRate" and len(parts) >= 2:
+                try:
+                    baud = int(parts[1])
+                    print(f"[reader] CLI baudRate -> {baud}")
+                    time.sleep(0.05)
+                    cli.baudrate = baud
+                    time.sleep(0.05)
+                except Exception as e:
+                    print(f"[reader] Failed to switch baud: {e}")
+            elif parts and parts[0].lower().startswith("sensorstart"):
+                print("[reader] sensorStart sent")
+
+        return baud
+    finally:
+        with suppress(Exception):
+            cli.close()
+
+
+def start_pipeline_with_config(
+    port: str = None,
+    cfg_path: str = None,
+    initial_baud: int = 115200,
+    default_stream_baud: int = 1250000,
+):
+    repo_root = _ensure_repo_root_on_path()
+
+    if port is None:
+        port = os.getenv("RADAR_PORT", "COM5")
+    if cfg_path is None:
+        cfg_path = os.getenv("RADAR_CFG", str(repo_root / "radar" / "config.cfg"))
+
+    final_baud = default_stream_baud
+    try:
+        print(f"[reader] Sending cfg {cfg_path} on {port} @ {initial_baud}")
+        final_baud = send_cfg_single_com(port=port, cfg_path=cfg_path, initial_baud=initial_baud)
+        print(f"[reader] Config sent. Switching to stream @ {final_baud}")
+    except Exception as e:
+        print(f"[reader] Config send failed: {e}. Trying to stream anyway @ {default_stream_baud}")
+        final_baud = default_stream_baud
+
+    time.sleep(float(os.getenv("RADAR_STREAM_START_DELAY_S", "0.3")))
+
+    # listen for heatmaps
+    read_uart_heatmap(port=port, baud=final_baud)
+
+
+def read_uart_heatmap(port: str = None, baud: int = None):
+    if port is None:
+        port = os.getenv("RADAR_PORT", "COM5")
+    if baud is None:
+        baud = int(os.getenv("RADAR_BAUD", "1250000"))
+
+    ser = serial.Serial(port, baudrate=baud, timeout=0.2)
+    print(f"[reader] Listening for heatmap on {port} @ {baud}")
+
+    buffer = bytearray()
+    alpha = float(os.getenv("HEATMAP_BG_ALPHA", "0.05"))
+    background_avg = np.zeros((NUM_RANGE_BINS, NUM_AZIMUTH_BINS), dtype=np.float32)
+
+    while True:
+        bytecount = ser.in_waiting
+        if bytecount > 0:
+            buffer.extend(ser.read(bytecount))
+
+        magic_index = buffer.find(MAGIC_WORD)
+        if magic_index == -1:
+            # prevent unbounded growth if sync is lost
+            if len(buffer) > 2_000_000:
+                del buffer[:-64]
+            continue
+
+        if magic_index > 0:
+            del buffer[:magic_index]
+
+        if len(buffer) < 40:
+            continue
+
+        # frame header = 40 bytes; totalPacketLen = bytes 12:16
+        total_packet_len = int.from_bytes(buffer[12:16], byteorder="little")
+        num_tlvs = int.from_bytes(buffer[32:36], byteorder="little")
+
+        if total_packet_len <= 0:
+            # drop magic word
+            del buffer[:8]
+            continue
+
+        if len(buffer) < total_packet_len:
+            continue
+
+        tlv_offset = 40
+        for _ in range(num_tlvs):
+            tlv_type = int.from_bytes(buffer[tlv_offset : tlv_offset + 4], "little")
+            tlv_length = int.from_bytes(buffer[tlv_offset + 4 : tlv_offset + 8], "little")
+            tlv_data = buffer[tlv_offset + 8 : tlv_offset + 8 + tlv_length]
+            tlv_offset += 8 + tlv_length
+
+            if tlv_type != HEATMAP_TLV:
+                continue
+
+            if len(tlv_data) < HEATMAP_BYTES:
+                continue
+
+            current_frame = np.frombuffer(tlv_data[:HEATMAP_BYTES], dtype=np.uint32).reshape(
+                NUM_RANGE_BINS, NUM_AZIMUTH_BINS
+            )
+            current_frame = current_frame.astype(np.float32)
+
+            # background subtraction
+            background_avg = ((1.0 - alpha) * background_avg) + (alpha * current_frame)
+            heatmap_2d = np.maximum(current_frame - background_avg, 0)
+
+            # keep most recent
+            try:
+                heatmap_queue.put_nowait(heatmap_2d)
+            except pyqueue.Full:
+                with suppress(pyqueue.Empty):
+                    _ = heatmap_queue.get_nowait()
+                with suppress(pyqueue.Full):
+                    heatmap_queue.put_nowait(heatmap_2d)
+
+        # Consume full frame
+        del buffer[:total_packet_len]
+
+
+def predict_loop():
+    model = _load_model()
+    class_names = ["sitting", "standing"]
+
+    print("[reader] ML inference loop started")
+
+    while True:
+        heatmap_raw = heatmap_queue.get()
+
+        with torch.no_grad():
+            input_tensor = torch.from_numpy(heatmap_raw).to(dtype=torch.float32)
+            t_min, t_max = input_tensor.min(), input_tensor.max()
+            input_tensor = (input_tensor - t_min) / (t_max - t_min + 1e-8)
+            input_tensor = input_tensor.view(1, 1, NUM_RANGE_BINS, NUM_AZIMUTH_BINS)
+
+            logits = model(input_tensor)
+            p_idx = int(torch.argmax(logits, dim=1).item())
+            status = class_names[p_idx] if 0 <= p_idx < len(class_names) else "unknown"
+
+        # always keep newest prediction
+        msg = {"status": status, "ml_idx": p_idx}
+        try:
+            queue.put_nowait(msg)
+        except pyqueue.Full:
+            with suppress(Exception):
+                _ = queue.get_nowait()
+            with suppress(Exception):
+                queue.put_nowait(msg)
