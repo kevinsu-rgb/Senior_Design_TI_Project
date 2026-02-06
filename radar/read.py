@@ -14,7 +14,7 @@ q: queue.Queue[np.ndarray[tuple[int, int], np.dtype[np.float32]]] = queue.Queue(
 
 
 # returns the baud rate the config is using
-def send_cfg(cfg_path: str, cli_baud_rate: int, cli_port: str) -> int:
+def send_cfg(cfg_path: str, cli_baud_rate: int, cli_port: str, data_port: str) -> int:
     cli = serial.Serial(cli_port, cli_baud_rate, timeout=1)
 
     # Read the config file
@@ -34,7 +34,7 @@ def send_cfg(cfg_path: str, cli_baud_rate: int, cli_port: str) -> int:
         time.sleep(0.01)
         _ = cli.write(b"\n")
 
-        if line.split(" ")[0] == "baudRate":
+        if line.split(" ")[0] == "baudRate" and cli_port == data_port:
             new_baud_rate = int(line.split(" ")[1])
             cli.baudrate = new_baud_rate
             cli_baud_rate = new_baud_rate
@@ -230,7 +230,7 @@ def main():
     cli_baud_rate = 115200
 
     reset_ports()
-    _ = send_cfg("config.cfg", cli_baud_rate, cli_port)
+    _ = send_cfg("config.cfg", cli_baud_rate, cli_port, data_port)
 
     start_p = lambda: read_uart("", data_port, 1250000)
 
