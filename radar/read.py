@@ -1,4 +1,5 @@
 import serial
+import matplotlib.pyplot as plt
 import time
 import glob
 import struct
@@ -40,10 +41,10 @@ def send_cfg(cfg_path: str, cli_baud_rate: int, cli_port: str) -> int:
             time.sleep(0.5)
 
         time.sleep(0.1)
-        while cli.in_waiting:
-            response = cli.readline().decode(errors="ignore").strip()
-            if response:
-                print(f"Response: {response}")
+        #while cli.in_waiting:
+        #    response = cli.readline().decode(errors="ignore").strip()
+        #    if response:
+        #        print(f"Response: {response}")
 
     print("Sent.")
     cli.close()
@@ -54,6 +55,7 @@ MAGIC_WORD = b"\x02\x01\x04\x03\x06\x05\x08\x07"
 
 
 def read_uart(_x: str, data_port: str, baud_rate: int):
+    print("starting read")
     ser = serial.Serial(data_port, baud_rate, timeout=1)
     buffer = bytearray()
 
@@ -62,6 +64,7 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
         if bytecount <= 0:
             continue
+
 
         data = ser.read(bytecount)
         buffer.extend(data)
@@ -101,13 +104,19 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                     tlv_data = buffer[tlv_offset + 8 : tlv_offset + 8 + tlv_length]
                     tlv_offset += tlv_length + 8
 
-                    # print(
-                    #    f"TLV Type: {tlv_type}, Length: {tlv_length}, Data: {tlv_data}"
-                    # )
+                    print(
+                        f"TLV Type: {tlv_type}, Length: {tlv_length}"
+                     )
 
                     # HEATMAP_TLV = 304
                     HEATMAP_TLV = 304
                     # HEATMAP_TLV = 305
+                    #
+                    #
+                    DOPPLER_HEATMAP_TLV = 5
+
+                    range_fft_size = 256
+                    doppler_fft_size = 32
 
                     NUM_RANGE_BINS = 128
                     NUM_AZIMUTH_BINS = 8
@@ -116,44 +125,59 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                         (NUM_RANGE_BINS, NUM_AZIMUTH_BINS), dtype=np.float32
                     )
 
-                    if tlv_type == HEATMAP_TLV:
-                        expected_size = 4 * NUM_RANGE_BINS * NUM_AZIMUTH_BINS
-                        num_elements = NUM_RANGE_BINS * NUM_AZIMUTH_BINS
-                        # heatmap_data = struct.unpack(
-                        #    f"<{num_elements}I", tlv_data[:expected_size]
-                        # )
-                        # heatmap_2d = np.array(heatmap_data, dtype=np.float32).reshape(
-                        #    NUM_RANGE_BINS, NUM_AZIMUTH_BINS
-                        # )
+                    if tlv_type == DOPPLER_HEATMAP_TLV :
+
+                        expected_size = 2 * range_fft_size * doppler_fft_size
+
                         current_frame = np.frombuffer(
-                            tlv_data[:expected_size], dtype=np.uint32
-                        ).reshape(NUM_RANGE_BINS, NUM_AZIMUTH_BINS)
+                            tlv_data[:expected_size], dtype=np.uint16
+                        ).reshape(range_fft_size, doppler_fft_size)
+
                         current_frame = current_frame.astype(np.float32)
 
-                        background_avg = ((1.0 - alpha) * background_avg) + (
-                            alpha * current_frame
-                        )
-                        heatmap_2d = np.maximum(current_frame - background_avg, 0)
-
-                        # lets push this heatmap to a queue, the max size of the queue is 1 but if it is full we do not put the data.
-                        # print(heatmap_2d)
                         try:
-                            q.put_nowait(heatmap_2d)
+                            q.put_nowait(current_frame)
                         except queue.Full:
                             continue
 
+                        pass
+                    
                 buffer = buffer[magic_index + 40 :]
 
 
 def predict():
     CLASS_NAMES = ["SITTING", "STANDING"]
 
-    record = False
+    record = True
     record_pose = "SITTING"
 
     i = 0
     while True:
         heatmap_raw = q.get()
+
+        if record:
+            timestamp = int(time.time() * 1000)
+            data_filepath = f"doppler/data/{record_pose}/{i}_frame_{timestamp}.csv"
+            np.savetxt(data_filepath, heatmap_raw, delimiter=",")
+
+            image_filepath = f"doppler/image/{record_pose}/{i}_frame_{timestamp}.png"
+
+            heatmap_log = np.log10(heatmap_raw + 1) 
+            heatmap_log[:, :2] = 0
+            heatmap_log[:, 30:] = 0
+            heatmap_zoomed = heatmap_log[0:80, :]
+
+            plt.figure(figsize=(8, 6))
+            plt.imshow(heatmap_zoomed, aspect='auto', origin='lower', cmap='viridis')
+            plt.colorbar(label='Intensity')
+            plt.xlabel('Doppler Bins')
+            plt.ylabel('Range Bins')
+            plt.title(f'Frame {i} - {record_pose}')
+            plt.savefig(image_filepath)
+            plt.close() 
+
+            i += 1
+            continue
 
         with torch.no_grad():
             input_tensor = torch.from_numpy(heatmap_raw).to(device, dtype=torch.float32)
@@ -161,12 +185,6 @@ def predict():
             t_min, t_max = input_tensor.min(), input_tensor.max()
             input_tensor = (input_tensor - t_min) / (t_max - t_min + 1e-8)
 
-            if record:
-                timestamp = int(time.time() * 1000)
-                filepath = f"training/{record_pose}/{i}_frame_{timestamp}.csv"
-                np.savetxt(filepath, input_tensor.cpu().numpy(), delimiter=",")
-                print(filepath)
-                i += 1
 
             input_tensor = input_tensor.view(1, 1, 128, 8)
             logits = model(input_tensor)
