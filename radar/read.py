@@ -41,7 +41,7 @@ def send_cfg(cfg_path: str, cli_baud_rate: int, cli_port: str, data_port: str) -
             time.sleep(0.5)
 
         time.sleep(0.1)
-        #while cli.in_waiting:
+        # while cli.in_waiting:
         #    response = cli.readline().decode(errors="ignore").strip()
         #    if response:
         #        print(f"Response: {response}")
@@ -64,7 +64,6 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
         if bytecount <= 0:
             continue
-
 
         data = ser.read(bytecount)
         buffer.extend(data)
@@ -104,33 +103,21 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                     tlv_data = buffer[tlv_offset + 8 : tlv_offset + 8 + tlv_length]
                     tlv_offset += tlv_length + 8
 
-                    print(
-                        f"TLV Type: {tlv_type}, Length: {tlv_length}"
-                     )
+                    print(f"TLV Type: {tlv_type}, Length: {tlv_length}")
 
-                    # HEATMAP_TLV = 304
-                    HEATMAP_TLV = 304
-                    # HEATMAP_TLV = 305
-                    #
-                    #
                     DOPPLER_HEATMAP_TLV = 5
 
-                    range_fft_size = 256
+                    range_fft_size = 128
                     doppler_fft_size = 32
 
                     NUM_RANGE_BINS = 128
                     NUM_AZIMUTH_BINS = 8
-                    alpha = 0.05
-                    background_avg = np.zeros(
-                        (NUM_RANGE_BINS, NUM_AZIMUTH_BINS), dtype=np.float32
-                    )
 
-                    if tlv_type == DOPPLER_HEATMAP_TLV :
-
-                        expected_size = 2 * range_fft_size * doppler_fft_size
+                    if tlv_type == DOPPLER_HEATMAP_TLV:
+                        expected_size = 4 * range_fft_size * doppler_fft_size
 
                         current_frame = np.frombuffer(
-                            tlv_data[:expected_size], dtype=np.uint16
+                            tlv_data[:expected_size], dtype=np.uint32
                         ).reshape(range_fft_size, doppler_fft_size)
 
                         current_frame = current_frame.astype(np.float32)
@@ -141,7 +128,7 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                             continue
 
                         pass
-                    
+
                 buffer = buffer[magic_index + 40 :]
 
 
@@ -162,19 +149,19 @@ def predict():
 
             image_filepath = f"doppler/image/{record_pose}/{i}_frame_{timestamp}.png"
 
-            heatmap_log = np.log10(heatmap_raw + 1) 
-            heatmap_log[:, :2] = 0
-            heatmap_log[:, 30:] = 0
-            heatmap_zoomed = heatmap_log[0:80, :]
+            heatmap_log = np.log10(heatmap_raw + 1)
+            heatmap_norm = (heatmap_log - heatmap_log.min()) / (
+                heatmap_log.max() - heatmap_log.min()
+            )
 
             plt.figure(figsize=(8, 6))
-            plt.imshow(heatmap_zoomed, aspect='auto', origin='lower', cmap='viridis')
-            plt.colorbar(label='Intensity')
-            plt.xlabel('Doppler Bins')
-            plt.ylabel('Range Bins')
-            plt.title(f'Frame {i} - {record_pose}')
+            plt.imshow(heatmap_norm, aspect="auto", origin="lower", cmap="viridis")
+            plt.colorbar(label="Intensity")
+            plt.xlabel("Doppler Bins")
+            plt.ylabel("Range Bins")
+            plt.title(f"Frame {i} - {record_pose}")
             plt.savefig(image_filepath)
-            plt.close() 
+            plt.close()
 
             i += 1
             continue
@@ -184,7 +171,6 @@ def predict():
 
             t_min, t_max = input_tensor.min(), input_tensor.max()
             input_tensor = (input_tensor - t_min) / (t_max - t_min + 1e-8)
-
 
             input_tensor = input_tensor.view(1, 1, 128, 8)
             logits = model(input_tensor)
