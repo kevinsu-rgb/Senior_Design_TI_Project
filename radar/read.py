@@ -107,20 +107,19 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
                     DOPPLER_HEATMAP_TLV = 5
 
-                    range_fft_size = 128
-                    doppler_fft_size = 32
+                    range_fft_size = 128  # adc samples
+                    doppler_fft_size = 32  # number of chirp loops
 
                     NUM_RANGE_BINS = 128
                     NUM_AZIMUTH_BINS = 8
 
                     if tlv_type == DOPPLER_HEATMAP_TLV:
                         expected_size = 4 * range_fft_size * doppler_fft_size
+                        print("expected size is: ", expected_size)
 
                         current_frame = np.frombuffer(
                             tlv_data[:expected_size], dtype=np.uint32
                         ).reshape(range_fft_size, doppler_fft_size)
-
-                        current_frame = current_frame.astype(np.float32)
 
                         try:
                             q.put_nowait(current_frame)
@@ -138,6 +137,11 @@ def predict():
     record = True
     record_pose = "SITTING"
 
+    num_range_bins = 128
+    num_doppler_bins = 32
+    range_res = 0.046
+    doppler_res = 0.745
+
     i = 0
     while True:
         heatmap_raw = q.get()
@@ -147,19 +151,31 @@ def predict():
             data_filepath = f"doppler/data/{record_pose}/{i}_frame_{timestamp}.csv"
             np.savetxt(data_filepath, heatmap_raw, delimiter=",")
 
-            image_filepath = f"doppler/image/{record_pose}/{i}_frame_{timestamp}.png"
+            heatmap = np.fft.fftshift(heatmap_raw, axes=1)
 
-            heatmap_log = np.log10(heatmap_raw + 1)
+            heatmap_log = np.log10(heatmap + 1)
+
             heatmap_norm = (heatmap_log - heatmap_log.min()) / (
                 heatmap_log.max() - heatmap_log.min()
             )
 
-            plt.figure(figsize=(8, 6))
-            plt.imshow(heatmap_norm, aspect="auto", origin="lower", cmap="viridis")
-            plt.colorbar(label="Intensity")
-            plt.xlabel("Doppler Bins")
-            plt.ylabel("Range Bins")
+            v_max = (num_doppler_bins / 2) * doppler_res
+            r_max = num_range_bins * range_res
+
+            image_filepath = f"doppler/image/{record_pose}/{i}_frame_{timestamp}.png"
+            plt.imshow(
+                heatmap_norm,
+                aspect="auto",
+                origin="lower",
+                extent=[-1, 1, 0, 1],
+                cmap="jet",
+            )
+
+            plt.colorbar(label="Log Intensity")
+            plt.xlabel("Velocity (m/s)")
+            plt.ylabel("Range (meters)")
             plt.title(f"Frame {i} - {record_pose}")
+
             plt.savefig(image_filepath)
             plt.close()
 
