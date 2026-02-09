@@ -107,7 +107,7 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
                     DOPPLER_HEATMAP_TLV = 5
 
-                    range_fft_size = 128  # adc samples
+                    range_fft_size = 64  # adc samples
                     doppler_fft_size = 32  # number of chirp loops
 
                     NUM_RANGE_BINS = 128
@@ -135,12 +135,12 @@ def predict():
     CLASS_NAMES = ["SITTING", "STANDING"]
 
     record = True
-    record_pose = "SITTING"
+    record_pose = "STANDING"
 
     num_range_bins = 128
     num_doppler_bins = 32
-    range_res = 0.046
-    doppler_res = 0.745
+    range_res = 0.039
+    doppler_res = 0.734
 
     i = 0
     while True:
@@ -167,7 +167,7 @@ def predict():
                 heatmap_norm,
                 aspect="auto",
                 origin="lower",
-                extent=[-1, 1, 0, 1],
+                extent=[-v_max, v_max, 0, r_max],
                 cmap="jet",
             )
 
@@ -180,6 +180,7 @@ def predict():
             plt.close()
 
             i += 1
+            print(i)
             continue
 
         with torch.no_grad():
