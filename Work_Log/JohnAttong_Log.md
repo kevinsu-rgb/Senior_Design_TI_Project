@@ -15,3 +15,9 @@
 > * [x] Debug build and flashing issues **(8 hours)**
 > * [x] Record heatmap data and program link **(6 hours)**
 
+## Work of 2/2 - 2/9
+
+> * [x] Record data and train model **(8 hours)**
+> * [x] Debug python data acquisition script **(3 hours)**
+> * [x] Start setting up Raspberry Pi to run model **(2 hours)**
+
