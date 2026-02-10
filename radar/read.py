@@ -14,6 +14,7 @@ import queue
 q: queue.Queue[np.ndarray[tuple[int, int], np.dtype[np.float32]]] = queue.Queue(1)
 
 space_pressed = False
+RECORD_MODE = True
 
 
 def on_press(key):
@@ -157,9 +158,9 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
 def predict():
     global space_pressed
+    global RECORD_MODE
     CLASS_NAMES = ["SITTING", "STANDING"]
 
-    record = True
     record_pose = "STANDING"
 
     num_range_bins = 128
@@ -171,7 +172,7 @@ def predict():
     while True:
         heatmap_raw = q.get()
 
-        if record and space_pressed:
+        if RECORD_MODE and space_pressed:
             timestamp = int(time.time() * 1000)
             data_filepath = f"doppler/data/{record_pose}/{i}_frame_{timestamp}.csv"
             np.savetxt(data_filepath, heatmap_raw, delimiter=",")
