@@ -7,10 +7,35 @@ import numpy as np
 import threading
 import torch
 from nn import NeuralNetwork
+from pynput import keyboard
 
 import queue
 
 q: queue.Queue[np.ndarray[tuple[int, int], np.dtype[np.float32]]] = queue.Queue(1)
+
+space_pressed = False
+
+
+def on_press(key):
+    global space_pressed
+    try:
+        # Check if spacebar was pressed
+        if key == keyboard.Key.space:
+            if space_pressed:
+                print("stopped recording data")
+                space_pressed = False
+            else:
+                print("recording data")
+                space_pressed = True
+
+    except AttributeError:
+        pass
+
+
+def listen_for_spacebar():
+    print("press spacebar to listen for data")
+    with keyboard.Listener(on_press=on_press) as listener:
+        listener.join()
 
 
 # returns the baud rate the config is using
@@ -103,7 +128,7 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                     tlv_data = buffer[tlv_offset + 8 : tlv_offset + 8 + tlv_length]
                     tlv_offset += tlv_length + 8
 
-                    print(f"TLV Type: {tlv_type}, Length: {tlv_length}")
+                    # print(f"TLV Type: {tlv_type}, Length: {tlv_length}")
 
                     DOPPLER_HEATMAP_TLV = 5
 
@@ -115,7 +140,6 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
                     if tlv_type == DOPPLER_HEATMAP_TLV:
                         expected_size = 4 * range_fft_size * doppler_fft_size
-                        print("expected size is: ", expected_size)
 
                         current_frame = np.frombuffer(
                             tlv_data[:expected_size], dtype=np.uint32
@@ -132,6 +156,7 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
 
 def predict():
+    global space_pressed
     CLASS_NAMES = ["SITTING", "STANDING"]
 
     record = True
@@ -146,7 +171,7 @@ def predict():
     while True:
         heatmap_raw = q.get()
 
-        if record:
+        if record and space_pressed:
             timestamp = int(time.time() * 1000)
             data_filepath = f"doppler/data/{record_pose}/{i}_frame_{timestamp}.csv"
             np.savetxt(data_filepath, heatmap_raw, delimiter=",")
@@ -239,6 +264,8 @@ def main():
 
     pt = threading.Thread(target=start_p, name="read uart")
     ct = threading.Thread(target=predict, name="predict data", daemon=True)
+    lt = threading.Thread(target=listen_for_spacebar, daemon=True)
+    lt.start()
 
     # read_uart("", data_port, 1250000)
     # check(data_port, 1250000)
