@@ -7,7 +7,6 @@ import numpy as np
 import threading
 import torch
 from nn import NeuralNetwork
-from pynput import keyboard
 
 import queue
 
@@ -16,28 +15,13 @@ q: queue.Queue[np.ndarray[tuple[int, int], np.dtype[np.float32]]] = queue.Queue(
 space_pressed = False
 RECORD_MODE = True
 
-
-def on_press(key):
-    global space_pressed
-    try:
-        # Check if spacebar was pressed
-        if key == keyboard.Key.space:
-            if space_pressed:
-                print("stopped recording data")
-                space_pressed = False
-            else:
-                print("recording data")
-                space_pressed = True
-
-    except AttributeError:
-        pass
-
-
 def listen_for_spacebar():
-    print("press spacebar to listen for data")
-    with keyboard.Listener(on_press=on_press) as listener:
-        listener.join()
-
+    global space_pressed
+    while True:
+        cmd = input("type 'r' to toggle data recording: \n")
+        if cmd == 'r':
+            space_pressed = not space_pressed
+            print(f"recording status: {space_pressed}")
 
 # returns the baud rate the config is using
 def send_cfg(cfg_path: str, cli_baud_rate: int, cli_port: str, data_port: str) -> int:
@@ -172,7 +156,10 @@ def predict():
     while True:
         heatmap_raw = q.get()
 
-        if RECORD_MODE and space_pressed:
+        if RECORD_MODE:
+            if not space_pressed:
+                continue
+
             timestamp = int(time.time() * 1000)
             data_filepath = f"doppler/data/{record_pose}/{i}_frame_{timestamp}.csv"
             np.savetxt(data_filepath, heatmap_raw, delimiter=",")
@@ -209,6 +196,7 @@ def predict():
             print(i)
             continue
 
+        
         with torch.no_grad():
             input_tensor = torch.from_numpy(heatmap_raw).to(device, dtype=torch.float32)
 
