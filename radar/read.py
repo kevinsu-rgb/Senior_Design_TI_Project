@@ -7,10 +7,11 @@ import numpy as np
 import threading
 import torch
 from nn import NeuralNetwork
-
+import os
 import queue
 
 q: queue.Queue[np.ndarray[tuple[int, int], np.dtype[np.float32]]] = queue.Queue(1)
+q_pointcloud: queue.Queue[np.ndarray] = queue.Queue(1)  # NEW: Queue for point cloud data
 
 space_pressed = False
 RECORD_MODE = True
@@ -51,10 +52,6 @@ def send_cfg(cfg_path: str, cli_baud_rate: int, cli_port: str, data_port: str) -
             time.sleep(0.5)
 
         time.sleep(0.1)
-        # while cli.in_waiting:
-        #    response = cli.readline().decode(errors="ignore").strip()
-        #    if response:
-        #        print(f"Response: {response}")
 
     print("Sent.")
     cli.close()
@@ -91,19 +88,23 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                 # read in our frame header
                 frame_header_raw = buffer[:40]
                 num_tlvs = int.from_bytes(frame_header_raw[32:36], byteorder="little")
-                _ = int.from_bytes(frame_header_raw[20:24], byteorder="little")
+                frame_num = int.from_bytes(frame_header_raw[20:24], byteorder="little")
                 total_packet_len = int.from_bytes(
                     frame_header_raw[12:16], byteorder="little"
                 )
 
                 tlv_offset = 40
 
-                # make sure we have enought data in our buffer to read all the tlvs
+                # make sure we have enough data in our buffer to read all the tlvs
                 while len(buffer) < total_packet_len:
                     bytecount = ser.in_waiting
                     if bytecount > 0:
                         data = ser.read(bytecount)
                         buffer.extend(data)
+
+                # variables to store frame data
+                current_doppler = None
+                current_pointcloud = None
 
                 for _ in range(num_tlvs):
                     tlv_header_raw = buffer[tlv_offset : tlv_offset + 8]
@@ -113,31 +114,85 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                     tlv_data = buffer[tlv_offset + 8 : tlv_offset + 8 + tlv_length]
                     tlv_offset += tlv_length + 8
 
-                    # print(f"TLV Type: {tlv_type}, Length: {tlv_length}")
-
+                    # TLV type constants
                     DOPPLER_HEATMAP_TLV = 5
+                    POINT_CLOUD_EXT_TLV = 301 
 
                     range_fft_size = 64  # adc samples
                     doppler_fft_size = 32  # number of chirp loops
 
-                    NUM_RANGE_BINS = 128
-                    NUM_AZIMUTH_BINS = 8
-
+                    # parse Doppler Heatmap TLV
                     if tlv_type == DOPPLER_HEATMAP_TLV:
                         expected_size = 4 * range_fft_size * doppler_fft_size
 
-                        current_frame = np.frombuffer(
+                        current_doppler = np.frombuffer(
                             tlv_data[:expected_size], dtype=np.uint32
                         ).reshape(range_fft_size, doppler_fft_size)
 
+                    # parse Point Cloud TLV
+                    elif tlv_type == POINT_CLOUD_EXT_TLV:
                         try:
-                            q.put_nowait(current_frame)
-                        except queue.Full:
-                            continue
+                            # struct formats
+                            pUnitStruct = '4f2h'  # 4 floats, 2 shorts (decompression units)
+                            pointStruct = '4h2B'  # 4 shorts (x,y,z,doppler), 2 bytes (snr, noise)
+                            
+                            pUnitSize = struct.calcsize(pUnitStruct)
+                            pointSize = struct.calcsize(pointStruct)
+                            
+                            # parse decompression factors
+                            pUnit = struct.unpack(pUnitStruct, tlv_data[:pUnitSize])
+                            
+                            # calculate number of points
+                            numPoints = int((tlv_length - pUnitSize) / pointSize)
+                            
+                            if numPoints > 0:
+                                # initialize point cloud array [x, y, z, doppler, snr, noise]
+                                pointCloud = np.zeros((numPoints, 6), dtype=np.float32)
+                                
+                                # skip past decompression units
+                                data_ptr = pUnitSize
+                                
+                                # parse each point
+                                for i in range(numPoints):
+                                    try:
+                                        x, y, z, doppler, snr, noise = struct.unpack(
+                                            pointStruct, 
+                                            tlv_data[data_ptr:data_ptr + pointSize]
+                                        )
+                                        
+                                        # decompress values
+                                        pointCloud[i, 0] = x * pUnit[0]       # x
+                                        pointCloud[i, 1] = y * pUnit[0]       # y
+                                        pointCloud[i, 2] = z * pUnit[0]       # z
+                                        pointCloud[i, 3] = doppler * pUnit[1] # Doppler
+                                        pointCloud[i, 4] = snr * pUnit[2]     # SNR
+                                        pointCloud[i, 5] = noise * pUnit[3]   # Noise
+                                        
+                                        data_ptr += pointSize
+                                        
+                                    except struct.error:
+                                        print(f"Failed to parse point {i}")
+                                        break
+                                
+                                current_pointcloud = pointCloud
+                                
+                        except Exception as e:
+                            print(f"Point Cloud parsing error: {e}")
 
+                # put data in queues after parsing all TLVs in frame
+                if current_doppler is not None:
+                    try:
+                        q.put_nowait(current_doppler)
+                    except queue.Full:
+                        pass
+                
+                if current_pointcloud is not None:
+                    try:
+                        q_pointcloud.put_nowait(current_pointcloud)
+                    except queue.Full:
                         pass
 
-                buffer = buffer[magic_index + 40 :]
+                buffer = buffer[total_packet_len:]
 
 
 def predict():
@@ -147,68 +202,103 @@ def predict():
 
     record_pose = "STANDING"
 
-    num_range_bins = 128
+    num_range_bins = 64
     num_doppler_bins = 32
     range_res = 0.039
     doppler_res = 0.734
 
+    # create directories for point cloud data
+    os.makedirs(f"pointcloud/data/{record_pose}", exist_ok=True)
+
     i = 0
     while True:
-        heatmap_raw = q.get()
+        # check if we have data in either queue
+        heatmap_raw = None
+        pointcloud_raw = None
+        
+        try:
+            heatmap_raw = q.get_nowait()
+        except queue.Empty:
+            pass
+        
+        try:
+            pointcloud_raw = q_pointcloud.get_nowait()
+        except queue.Empty:
+            pass
+        
+        # if no data at all, wait a bit and continue
+        if heatmap_raw is None and pointcloud_raw is None:
+            time.sleep(0.01)
+            continue
 
         if RECORD_MODE:
             if not space_pressed:
                 continue
 
             timestamp = int(time.time() * 1000)
-            data_filepath = f"doppler/data/{record_pose}/{i}_frame_{timestamp}.csv"
-            np.savetxt(data_filepath, heatmap_raw, delimiter=",")
+            
+            # save Doppler heatmap if available
+            if heatmap_raw is not None:
+                data_filepath = f"doppler/data/{record_pose}/{i}_frame_{timestamp}.csv"
+                np.savetxt(data_filepath, heatmap_raw, delimiter=",")
 
-            heatmap = np.fft.fftshift(heatmap_raw, axes=1)
+                heatmap = np.fft.fftshift(heatmap_raw, axes=1)
+                heatmap_log = np.log10(heatmap + 1)
+                heatmap_norm = (heatmap_log - heatmap_log.min()) / (
+                    heatmap_log.max() - heatmap_log.min()
+                )
 
-            heatmap_log = np.log10(heatmap + 1)
+                v_max = (num_doppler_bins / 2) * doppler_res
+                r_max = num_range_bins * range_res
 
-            heatmap_norm = (heatmap_log - heatmap_log.min()) / (
-                heatmap_log.max() - heatmap_log.min()
-            )
+                image_filepath = f"doppler/image/{record_pose}/{i}_frame_{timestamp}.png"
+                plt.imshow(
+                    heatmap_norm,
+                    aspect="auto",
+                    origin="lower",
+                    extent=[-v_max, v_max, 0, r_max],
+                    cmap="jet",
+                )
 
-            v_max = (num_doppler_bins / 2) * doppler_res
-            r_max = num_range_bins * range_res
+                plt.colorbar(label="Log Intensity")
+                plt.xlabel("Velocity (m/s)")
+                plt.ylabel("Range (meters)")
+                plt.title(f"Frame {i} - {record_pose}")
 
-            image_filepath = f"doppler/image/{record_pose}/{i}_frame_{timestamp}.png"
-            plt.imshow(
-                heatmap_norm,
-                aspect="auto",
-                origin="lower",
-                extent=[-v_max, v_max, 0, r_max],
-                cmap="jet",
-            )
-
-            plt.colorbar(label="Log Intensity")
-            plt.xlabel("Velocity (m/s)")
-            plt.ylabel("Range (meters)")
-            plt.title(f"Frame {i} - {record_pose}")
-
-            plt.savefig(image_filepath)
-            plt.close()
+                plt.savefig(image_filepath)
+                plt.close()
+            
+            # save Point Cloud if available
+            if pointcloud_raw is not None:
+                pc_filepath = f"pointcloud/data/{record_pose}/{i}_frame_{timestamp}.csv"
+                # Save with header for clarity
+                np.savetxt(
+                    pc_filepath, 
+                    pointcloud_raw, 
+                    delimiter=",",
+                    header="x,y,z,doppler,snr,noise",
+                    comments=''
+                )
+                print(f"Saved point cloud: {pointcloud_raw.shape[0]} points")
 
             i += 1
-            print(i)
+            print(f"Frame {i} - Doppler: {heatmap_raw is not None}, PointCloud: {pointcloud_raw is not None}")
             continue
 
-        
-        with torch.no_grad():
-            input_tensor = torch.from_numpy(heatmap_raw).to(device, dtype=torch.float32)
+        # inference mode
+        if heatmap_raw is not None:
+            with torch.no_grad():
+                input_tensor = torch.from_numpy(heatmap_raw).to(device, dtype=torch.float32)
 
-            t_min, t_max = input_tensor.min(), input_tensor.max()
-            input_tensor = (input_tensor - t_min) / (t_max - t_min + 1e-8)
+                t_min, t_max = input_tensor.min(), input_tensor.max()
+                input_tensor = (input_tensor - t_min) / (t_max - t_min + 1e-8)
 
-            input_tensor = input_tensor.view(1, 1, 128, 8)
-            logits = model(input_tensor)
+                input_tensor = input_tensor.view(1, 1, 64, 32)
+                logits = model(input_tensor)
 
-            p_idx = torch.argmax(logits, dim=1).item()
+                p_idx = torch.argmax(logits, dim=1).item()
 
-            print(f"Detected: {p_idx}")
+                print(f"Detected: {CLASS_NAMES[p_idx]}")
 
 
 def check(data_port: str, data_baud_rate: int):
@@ -230,23 +320,29 @@ def check(data_port: str, data_baud_rate: int):
         print(f"Error: {e}")
 
 
-def reset_ports():
-    ports = glob.glob("/dev/ttyACM*")
-    for port in ports:
-        try:
-            s = serial.Serial(port)
-            s.close()
-            print(f"Manually closed: {port}")
-        except:
-            print(f"Could not access {port} (maybe already closed or in use by system)")
+# def reset_ports():
+#     ports = glob.glob("/dev/ttyACM*")
+#     for port in ports:
+#         try:
+#             s = serial.Serial(port)
+#             s.close()
+#             print(f"Manually closed: {port}")
+#         except:
+#             print(f"Could not access {port} (maybe already closed or in use by system)")
 
 
 def main():
-    cli_port = "/dev/ttyACM0"
-    data_port = "/dev/ttyACM0"
+    cli_port = "COM5"
+    data_port = "COM5"
     cli_baud_rate = 115200
 
-    reset_ports()
+    # NEW: Create directory structure
+    for pose in ["SITTING", "STANDING"]:
+        os.makedirs(f"doppler/data/{pose}", exist_ok=True)
+        os.makedirs(f"doppler/image/{pose}", exist_ok=True)
+        os.makedirs(f"pointcloud/data/{pose}", exist_ok=True)
+
+    #reset_ports()
     _ = send_cfg("config.cfg", cli_baud_rate, cli_port, data_port)
 
     start_p = lambda: read_uart("", data_port, 1250000)
@@ -256,9 +352,6 @@ def main():
     lt = threading.Thread(target=listen_for_spacebar, daemon=True)
     lt.start()
 
-    # read_uart("", data_port, 1250000)
-    # check(data_port, 1250000)
-    #
     pt.start()
     ct.start()
 
