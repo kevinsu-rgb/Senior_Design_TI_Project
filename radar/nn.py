@@ -1,9 +1,9 @@
 from torch import nn
 
 
-class LinearModel(nn.Module):
+class NeuralNetwork(nn.Module):
     def __init__(self, input_size: int, output_size: int):
-        super(LinearModel, self).__init__()
+        super(NeuralNetwork, self).__init__()
         self.bn1 = nn.BatchNorm1d(num_features=input_size)
         self.fc1 = nn.Linear(in_features=input_size, out_features=64)
         self.bn2 = nn.BatchNorm1d(num_features=64)
