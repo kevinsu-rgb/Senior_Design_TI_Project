@@ -5,6 +5,7 @@
 */.pnp
 .pnp.js
 */venv
+venv/
 .env
 
 # testing
@@ -30,3 +31,6 @@ yarn-debug.log*
 yarn-error.log*
 
 radar/doppler/
+
+.idea/
+.vscode/
