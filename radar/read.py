@@ -9,20 +9,34 @@ import torch
 from nn import NeuralNetwork
 import os
 import queue
+from pynput import keyboard
+import signal
+import sys
 
 q: queue.Queue[np.ndarray[tuple[int, int], np.dtype[np.float32]]] = queue.Queue(1)
-q_pointcloud: queue.Queue[np.ndarray] = queue.Queue(1)  # NEW: Queue for point cloud data
+q_pointcloud: queue.Queue[np.ndarray] = queue.Queue(1)
+q_tracker: queue.Queue[np.ndarray] = queue.Queue(1)  # NEW: Queue for tracker data
 
 space_pressed = False
-RECORD_MODE = True
+shutdown_flag = threading.Event()
+
+def signal_handler(sig, frame):
+    print('\nShutting down')
+    shutdown_flag.set()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+
+def on_press(key):
+    global space_pressed
+    
+    if key == keyboard.Key.space:
+        space_pressed = not space_pressed
+        print(f"Recording status: {space_pressed}")
 
 def listen_for_spacebar():
-    global space_pressed
-    while True:
-        cmd = input("type 'r' to toggle data recording: \n")
-        if cmd == 'r':
-            space_pressed = not space_pressed
-            print(f"recording status: {space_pressed}")
+    with keyboard.Listener(on_press=on_press) as listener:
+        listener.join()
 
 # returns the baud rate the config is using
 def send_cfg(cfg_path: str, cli_baud_rate: int, cli_port: str, data_port: str) -> int:
@@ -103,8 +117,8 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                         buffer.extend(data)
 
                 # variables to store frame data
-                current_doppler = None
                 current_pointcloud = None
+                current_tracker = None
 
                 for _ in range(num_tlvs):
                     tlv_header_raw = buffer[tlv_offset : tlv_offset + 8]
@@ -115,24 +129,13 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                     tlv_offset += tlv_length + 8
 
                     # TLV type constants
-                    DOPPLER_HEATMAP_TLV = 5
-                    POINT_CLOUD_EXT_TLV = 301 
-
-                    range_fft_size = 64  # adc samples
-                    doppler_fft_size = 32  # number of chirp loops
-
-                    # parse Doppler Heatmap TLV
-                    if tlv_type == DOPPLER_HEATMAP_TLV:
-                        expected_size = 4 * range_fft_size * doppler_fft_size
-
-                        current_doppler = np.frombuffer(
-                            tlv_data[:expected_size], dtype=np.uint32
-                        ).reshape(range_fft_size, doppler_fft_size)
+                    POINT_CLOUD_EXT_TLV = 301
+                    TRACKER_TLV = 308
 
                     # parse Point Cloud TLV
-                    elif tlv_type == POINT_CLOUD_EXT_TLV:
+                    if tlv_type == POINT_CLOUD_EXT_TLV:
                         try:
-                            # struct formats
+                            # struct formats (from TI reference)
                             pUnitStruct = '4f2h'  # 4 floats, 2 shorts (decompression units)
                             pointStruct = '4h2B'  # 4 shorts (x,y,z,doppler), 2 bytes (snr, noise)
                             
@@ -146,8 +149,8 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                             numPoints = int((tlv_length - pUnitSize) / pointSize)
                             
                             if numPoints > 0:
-                                # initialize point cloud array [x, y, z, doppler, snr, noise]
-                                pointCloud = np.zeros((numPoints, 6), dtype=np.float32)
+                                # initialize point cloud array [y, z, snr] only
+                                pointCloud = np.zeros((numPoints, 3), dtype=np.float32)
                                 
                                 # skip past decompression units
                                 data_ptr = pUnitSize
@@ -160,13 +163,10 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                                             tlv_data[data_ptr:data_ptr + pointSize]
                                         )
                                         
-                                        # decompress values
-                                        pointCloud[i, 0] = x * pUnit[0]       # x
-                                        pointCloud[i, 1] = y * pUnit[0]       # y
-                                        pointCloud[i, 2] = z * pUnit[0]       # z
-                                        pointCloud[i, 3] = doppler * pUnit[1] # Doppler
-                                        pointCloud[i, 4] = snr * pUnit[2]     # SNR
-                                        pointCloud[i, 5] = noise * pUnit[3]   # Noise
+                                        # decompress values - only save y, z, snr
+                                        pointCloud[i, 0] = y * pUnit[0]       # y
+                                        pointCloud[i, 1] = z * pUnit[0]       # z
+                                        pointCloud[i, 2] = snr * pUnit[2]     # SNR
                                         
                                         data_ptr += pointSize
                                         
@@ -179,16 +179,46 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                         except Exception as e:
                             print(f"Point Cloud parsing error: {e}")
 
+                    # parse Tracker TLV
+                    elif tlv_type == TRACKER_TLV:
+                        try:
+                            targetStruct = 'I27f'
+                            targetSize = struct.calcsize(targetStruct)
+                            numDetectedTargets = int(tlv_length / targetSize)
+                            
+                            if numDetectedTargets > 0:
+                                # We only care about the first target
+                                targetData = struct.unpack(targetStruct, tlv_data[:targetSize])
+                                
+                                # tid, posx, posy, posz, velx, vely, velz, accx, accy, accz
+                                tracker_info = np.array([
+                                    targetData[0],   # Target ID
+                                    targetData[1],   # X Position
+                                    targetData[2],   # Y Position
+                                    targetData[3],   # Z Position
+                                    targetData[4],   # X Velocity
+                                    targetData[5],   # Y Velocity
+                                    targetData[6],   # Z Velocity
+                                    targetData[7],   # X Acceleration
+                                    targetData[8],   # Y Acceleration
+                                    targetData[9]    # Z Acceleration
+                                ], dtype=np.float32)
+                                
+                                current_tracker = tracker_info
+                                
+                        except Exception as e:
+                            print(f"Tracker parsing error: {e}")
+
                 # put data in queues after parsing all TLVs in frame
-                if current_doppler is not None:
+                if current_pointcloud is not None:
                     try:
-                        q.put_nowait(current_doppler)
+                        q_pointcloud.put_nowait((frame_num, current_pointcloud))
                     except queue.Full:
                         pass
                 
-                if current_pointcloud is not None:
+                if current_tracker is not None:
                     try:
-                        q_pointcloud.put_nowait(current_pointcloud)
+                        q_tracker.put_nowait(current_tracker)
                     except queue.Full:
                         pass
 
@@ -197,108 +227,85 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
 def predict():
     global space_pressed
-    global RECORD_MODE
-    CLASS_NAMES = ["SITTING", "STANDING"]
+    global shutdown_flag
 
     record_pose = "STANDING"
 
-    num_range_bins = 64
-    num_doppler_bins = 32
-    range_res = 0.039
-    doppler_res = 0.734
+    # create directories for combined data
+    os.makedirs(f"combined/data/{record_pose}", exist_ok=True)
 
-    # create directories for point cloud data
-    os.makedirs(f"pointcloud/data/{record_pose}", exist_ok=True)
+    frame_count = 0
+    
+    # Open CSV file for writing
+    csv_filepath = f"combined/data/{record_pose}/tracker_pointcloud_data.csv"
+    
+    # Estimate max points (you can adjust this based on your radar config)
+    MAX_POINTS_ESTIMATE = 50
+    
+    # Write header with estimated point columns
+    # Format matches notebook expectations: tid, posx, posy, posz, velx, vely, velz, accx, accy, accz, pointy0, pointz0, snr0, ...
+    with open(csv_filepath, 'w') as csv_file:
+        header = "Frame count,tid,posx,posy,posz,velx,vely,velz,accx,accy,accz"
+        for i in range(MAX_POINTS_ESTIMATE):
+            header += f",pointy{i},pointz{i},snr{i}"
+        csv_file.write(header + '\n')
+    
+    # Open in append mode
+    csv_file = open(csv_filepath, 'a')
+    
+    try:
+        while not shutdown_flag.is_set():
+            # check if we have data in queues
+            pointcloud_data = None
+            tracker_data = None
+            frame_num = None
+            
+            try:
+                frame_num, pointcloud_data = q_pointcloud.get_nowait()
+            except queue.Empty:
+                pass
+            
+            try:
+                tracker_data = q_tracker.get_nowait()
+            except queue.Empty:
+                pass
+            
+            # if no data at all, wait a bit and continue
+            if pointcloud_data is None and tracker_data is None:
+                time.sleep(0.01)
+                continue
 
-    i = 0
-    while True:
-        # check if we have data in either queue
-        heatmap_raw = None
-        pointcloud_raw = None
-        
-        try:
-            heatmap_raw = q.get_nowait()
-        except queue.Empty:
-            pass
-        
-        try:
-            pointcloud_raw = q_pointcloud.get_nowait()
-        except queue.Empty:
-            pass
-        
-        # if no data at all, wait a bit and continue
-        if heatmap_raw is None and pointcloud_raw is None:
-            time.sleep(0.01)
-            continue
-
-        if RECORD_MODE:
+            # Only record when spacebar is pressed
             if not space_pressed:
                 continue
 
-            timestamp = int(time.time() * 1000)
-            
-            # save Doppler heatmap if available
-            if heatmap_raw is not None:
-                data_filepath = f"doppler/data/{record_pose}/{i}_frame_{timestamp}.csv"
-                np.savetxt(data_filepath, heatmap_raw, delimiter=",")
-
-                heatmap = np.fft.fftshift(heatmap_raw, axes=1)
-                heatmap_log = np.log10(heatmap + 1)
-                heatmap_norm = (heatmap_log - heatmap_log.min()) / (
-                    heatmap_log.max() - heatmap_log.min()
-                )
-
-                v_max = (num_doppler_bins / 2) * doppler_res
-                r_max = num_range_bins * range_res
-
-                image_filepath = f"doppler/image/{record_pose}/{i}_frame_{timestamp}.png"
-                plt.imshow(
-                    heatmap_norm,
-                    aspect="auto",
-                    origin="lower",
-                    extent=[-v_max, v_max, 0, r_max],
-                    cmap="jet",
-                )
-
-                plt.colorbar(label="Log Intensity")
-                plt.xlabel("Velocity (m/s)")
-                plt.ylabel("Range (meters)")
-                plt.title(f"Frame {i} - {record_pose}")
-
-                plt.savefig(image_filepath)
-                plt.close()
-            
-            # save Point Cloud if available
-            if pointcloud_raw is not None:
-                pc_filepath = f"pointcloud/data/{record_pose}/{i}_frame_{timestamp}.csv"
-                # Save with header for clarity
-                np.savetxt(
-                    pc_filepath, 
-                    pointcloud_raw, 
-                    delimiter=",",
-                    header="x,y,z,doppler,snr,noise",
-                    comments=''
-                )
-                print(f"Saved point cloud: {pointcloud_raw.shape[0]} points")
-
-            i += 1
-            print(f"Frame {i} - Doppler: {heatmap_raw is not None}, PointCloud: {pointcloud_raw is not None}")
-            continue
-
-        # inference mode
-        if heatmap_raw is not None:
-            with torch.no_grad():
-                input_tensor = torch.from_numpy(heatmap_raw).to(device, dtype=torch.float32)
-
-                t_min, t_max = input_tensor.min(), input_tensor.max()
-                input_tensor = (input_tensor - t_min) / (t_max - t_min + 1e-8)
-
-                input_tensor = input_tensor.view(1, 1, 64, 32)
-                logits = model(input_tensor)
-
-                p_idx = torch.argmax(logits, dim=1).item()
-
-                print(f"Detected: {CLASS_NAMES[p_idx]}")
+            # Only save if we have tracker data
+            if tracker_data is not None:
+                frame_count += 1
+                
+                # Start building the row
+                row_data = [frame_count]
+                
+                # Add tracker data: tid, posx, posy, posz, velx, vely, velz, accx, accy, accz
+                row_data.extend(tracker_data.tolist())
+                
+                # Add point cloud data if available
+                if pointcloud_data is not None:
+                    # Flatten point cloud: pointy0, pointz0, snr0, pointy1, pointz1, snr1, ...
+                    for point in pointcloud_data:
+                        row_data.extend(point.tolist())  # [y, z, snr]
+                    
+                    print(f"Frame {frame_count} - Tracker: tid={int(tracker_data[0])}, Points: {pointcloud_data.shape[0]}")
+                else:
+                    print(f"Frame {frame_count} - Tracker: tid={int(tracker_data[0])}, Points: 0")
+                
+                # Write row to CSV
+                csv_file.write(','.join(map(str, row_data)) + '\n')
+                csv_file.flush()  # Ensure data is written immediately
+    
+    finally:
+        csv_file.close()
+        print("CSV file closed.")
 
 
 def check(data_port: str, data_baud_rate: int):
@@ -320,34 +327,20 @@ def check(data_port: str, data_baud_rate: int):
         print(f"Error: {e}")
 
 
-# def reset_ports():
-#     ports = glob.glob("/dev/ttyACM*")
-#     for port in ports:
-#         try:
-#             s = serial.Serial(port)
-#             s.close()
-#             print(f"Manually closed: {port}")
-#         except:
-#             print(f"Could not access {port} (maybe already closed or in use by system)")
-
-
 def main():
     cli_port = "COM5"
     data_port = "COM5"
     cli_baud_rate = 115200
 
-    # NEW: Create directory structure
+    # create directory structure
     for pose in ["SITTING", "STANDING"]:
-        os.makedirs(f"doppler/data/{pose}", exist_ok=True)
-        os.makedirs(f"doppler/image/{pose}", exist_ok=True)
-        os.makedirs(f"pointcloud/data/{pose}", exist_ok=True)
+        os.makedirs(f"combined/data/{pose}", exist_ok=True)
 
-    #reset_ports()
     _ = send_cfg("config.cfg", cli_baud_rate, cli_port, data_port)
 
     start_p = lambda: read_uart("", data_port, 1250000)
 
-    pt = threading.Thread(target=start_p, name="read uart")
+    pt = threading.Thread(target=start_p, name="read uart", daemon=True)
     ct = threading.Thread(target=predict, name="predict data", daemon=True)
     lt = threading.Thread(target=listen_for_spacebar, daemon=True)
     lt.start()
@@ -355,11 +348,17 @@ def main():
     pt.start()
     ct.start()
 
-    pt.join()
+    # Keep main thread alive but allow Ctrl+C to work
+    try:
+        while not shutdown_flag.is_set():
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        print("\nExiting")
+        shutdown_flag.set()
 
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-model = NeuralNetwork().to(device)
+model = NeuralNetwork(176, 5).to(device)
 model.load_state_dict(torch.load("model.pth", map_location=device))
 model.eval()
 
