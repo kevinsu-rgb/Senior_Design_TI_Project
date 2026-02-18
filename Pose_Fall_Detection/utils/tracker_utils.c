@@ -49,7 +49,6 @@
 #include <math.h>
 
 
-
 /* mmWave SDK Include Files: */
 #include <common/syscommon.h>
 #include <drivers/uart.h>
@@ -68,16 +67,18 @@
 /**************************************************************************
  *************************** Global Definitions ***************************
  **************************************************************************/
-extern float       gSocClk;
-typedef enum {
+extern float gSocClk;
+typedef enum
+{
     TRACKING_DEFAULT_PARAM_SET = 0,
     TRACKING_TRAFFIC_MONITORING_PARAM_SET,
     TRACKING_PEOPLE_COUNTING_PARAM_SET,
-    TRACKING_OUTDOOR_PARAM_SET,	
-    TRACKING_CEILING_MOUNT_PARAM_SET	
+    TRACKING_OUTDOOR_PARAM_SET,
+    TRACKING_CEILING_MOUNT_PARAM_SET
 } TRACKING_ADVANCED_PARAM_SET;
 
-typedef enum {
+typedef enum
+{
     TRACKING_PARAM_SET_TM = 0,
     TRACKING_PARAM_SET_PC,
     TRACKING_PARAM_SET_OUTDOOR,
@@ -135,7 +136,7 @@ float maxAccelerationParams[3] = {1, 1, 1};
  * @brief
  *  Global Variable for tracking information required by the mmw Demo
  */
-extern MmwDemo_MSS_MCB    gMmwMssMCB;
+extern MmwDemo_MSS_MCB gMmwMssMCB;
 
 
 unsigned int gGtrackMemoryUsed = 0;
@@ -143,13 +144,13 @@ unsigned int gGtrackMemoryUsed = 0;
 /* These functions are abstracted to the DPC */
 void *gtrack_alloc(unsigned int numElements, unsigned int sizeInBytes)
 {
-	gGtrackMemoryUsed += numElements*sizeInBytes;
-	return HeapP_alloc(&gMmwMssMCB.CoreLocalTrackerHeapObj, numElements*sizeInBytes);
+    gGtrackMemoryUsed += numElements * sizeInBytes;
+    return HeapP_alloc(&gMmwMssMCB.CoreLocalTrackerHeapObj, numElements * sizeInBytes);
 }
 void gtrack_free(void *pFree, unsigned int sizeInBytes)
 {
-	gGtrackMemoryUsed -= sizeInBytes;
-	HeapP_free(&gMmwMssMCB.CoreLocalTrackerHeapObj, pFree);
+    gGtrackMemoryUsed -= sizeInBytes;
+    HeapP_free(&gMmwMssMCB.CoreLocalTrackerHeapObj, pFree);
 }
 void gtrack_log(GTRACK_VERBOSE_TYPE level, const char *format, ...)
 {
@@ -177,35 +178,37 @@ void gtrack_log(GTRACK_VERBOSE_TYPE level, const char *format, ...)
  *  @retval
  *      Error   -   <0
  */
-int32_t MmwDemo_CLITrackingCfg (int32_t argc, char* argv[])
+int32_t MmwDemo_CLITrackingCfg(int32_t argc, char *argv[])
 {
     GTRACK_moduleConfig         config;
-    volatile float chirpRepetitionPeriodus, carrierFrequencyMhz;
+    volatile float              chirpRepetitionPeriodus, carrierFrequencyMhz;
     TRACKING_ADVANCED_PARAM_SET trackingParamSet;
 
-    if(gMmwMssMCB.frameCfg.h_NumOfBurstsInFrame == 1)
+    if (gMmwMssMCB.frameCfg.h_NumOfBurstsInFrame == 1)
     {
-        chirpRepetitionPeriodus = gMmwMssMCB.numTxAntennas * ((gMmwMssMCB.profileTimeCfg.h_ChirpIdleTime/10.0)+(gMmwMssMCB.profileComCfg.h_ChirpRampEndTime/10.0));
+        chirpRepetitionPeriodus = gMmwMssMCB.numTxAntennas * ((gMmwMssMCB.profileTimeCfg.h_ChirpIdleTime / 10.0) + (gMmwMssMCB.profileComCfg.h_ChirpRampEndTime / 10.0));
     }
     else
     {
         chirpRepetitionPeriodus = gMmwMssMCB.burstPeriod;
     }
 
-    carrierFrequencyMhz = (gMmwMssMCB.startFreq * 1000) + (gMmwMssMCB.chirpSlope * ((gMmwMssMCB.profileTimeCfg.h_ChirpAdcStartTime >> 10)/gMmwMssMCB.adcSamplingRate)) + ((gMmwMssMCB.chirpSlope * (gMmwMssMCB.profileComCfg.h_NumOfAdcSamples/gMmwMssMCB.adcSamplingRate))/2);
+    carrierFrequencyMhz = (gMmwMssMCB.startFreq * 1000) + (gMmwMssMCB.chirpSlope * ((gMmwMssMCB.profileTimeCfg.h_ChirpAdcStartTime >> 10) / gMmwMssMCB.adcSamplingRate)) + ((gMmwMssMCB.chirpSlope * (gMmwMssMCB.profileComCfg.h_NumOfAdcSamples / gMmwMssMCB.adcSamplingRate)) / 2);
 
-    if (argc >= 1) {
-        gMmwMssMCB.trackerCfg.staticCfg.trackerEnabled = (uint16_t) atoi (argv[1]);
+    if (argc >= 1)
+    {
+        gMmwMssMCB.trackerCfg.staticCfg.trackerEnabled = (uint16_t)atoi(argv[1]);
     }
 
-    if(gMmwMssMCB.trackerCfg.staticCfg.trackerEnabled != 1) {
+    if (gMmwMssMCB.trackerCfg.staticCfg.trackerEnabled != 1)
+    {
         return 0;
     }
 
     /* Sanity Check: Minimum argument check */
     if (argc < 5)
     {
-        CLI_write ("Error: Invalid usage of the CLI command\n");
+        CLI_write("Error: Invalid usage of the CLI command\n");
         return -1;
     }
 /*For debugging purposes*/
@@ -214,34 +217,33 @@ int32_t MmwDemo_CLITrackingCfg (int32_t argc, char* argv[])
     MmwDemo_printHeapStats();
 #endif
     /* Initialize CLI configuration: */
-    memset ((void *)&config, 0, sizeof(GTRACK_moduleConfig));
+    memset((void *)&config, 0, sizeof(GTRACK_moduleConfig));
 
-    trackingParamSet = (TRACKING_ADVANCED_PARAM_SET) atoi (argv[2]);
+    trackingParamSet                                 = (TRACKING_ADVANCED_PARAM_SET)atoi(argv[2]);
     gMmwMssMCB.trackerCfg.staticCfg.trackingParamSet = trackingParamSet;
 
 
-
 #ifdef GTRACK_3D
-    config.stateVectorType      	= GTRACK_STATE_VECTORS_3DA; // Track three dimensions with acceleration
+    config.stateVectorType = GTRACK_STATE_VECTORS_3DA; // Track three dimensions with acceleration
 #else
-    config.stateVectorType      	= GTRACK_STATE_VECTORS_2DA; // Track two dimensions with acceleration
+    config.stateVectorType = GTRACK_STATE_VECTORS_2DA; // Track two dimensions with acceleration
 #endif
-    config.verbose              	= GTRACK_VERBOSE_NONE;
-    config.maxNumPoints         	= (uint16_t) atoi(argv[3]);
-    config.maxNumTracks         	= (uint16_t) atoi(argv[4]);
-    config.maxVelocitymps   		= (float) ((10 * (SPEED_OF_LIGHT_IN_METERS_PER_SEC/(4 * carrierFrequencyMhz * chirpRepetitionPeriodus))) * 0.1f);
+    config.verbose        = GTRACK_VERBOSE_NONE;
+    config.maxNumPoints   = (uint16_t)atoi(argv[3]);
+    config.maxNumTracks   = (uint16_t)atoi(argv[4]);
+    config.maxVelocitymps = (float)((10 * (SPEED_OF_LIGHT_IN_METERS_PER_SEC / (4 * carrierFrequencyMhz * chirpRepetitionPeriodus))) * 0.1f);
 #ifndef GTRACK_3D
-    config.radialVelocityResolutionmps	= (float) (((2 * (SPEED_OF_LIGHT_IN_METERS_PER_SEC/(4 * carrierFrequencyMhz * chirpRepetitionPeriodus))) / ((gMmwMssMCB.frameCfg.h_NumOfChirpsInBurst * gMmwMssMCB.frameCfg.h_NumOfBurstsInFrame) / gMmwMssMCB.numTxAntennas)) * 0.001f); 
+    config.radialVelocityResolutionmps = (float)(((2 * (SPEED_OF_LIGHT_IN_METERS_PER_SEC / (4 * carrierFrequencyMhz * chirpRepetitionPeriodus))) / ((gMmwMssMCB.frameCfg.h_NumOfChirpsInBurst * gMmwMssMCB.frameCfg.h_NumOfBurstsInFrame) / gMmwMssMCB.numTxAntennas)) * 0.001f);
 #endif
-    config.deltaT               	= (float) ((gMmwMssMCB.frameCfg.w_FramePeriodicity)/gSocClk);
+    config.deltaT = (float)((gMmwMssMCB.frameCfg.w_FramePeriodicity) / gSocClk);
 
     /* Boresight filtering is enabled by default.
      * This allows existing overhead configs to work without change.
      */
-    config.boresightFilteringEnable     = 0;
-    if(argc >= 6)
+    config.boresightFilteringEnable = 0;
+    if (argc >= 6)
     {
-        config.boresightFilteringEnable = (uint16_t) atoi(argv[5]);
+        config.boresightFilteringEnable = (uint16_t)atoi(argv[5]);
     }
 
     /* Save Configuration to use later */
@@ -250,7 +252,7 @@ int32_t MmwDemo_CLITrackingCfg (int32_t argc, char* argv[])
     return 0;
 }
 
-int32_t MmwDemo_CLIStaticBoundaryBoxCfg (int32_t argc, char* argv[])
+int32_t MmwDemo_CLIStaticBoundaryBoxCfg(int32_t argc, char *argv[])
 {
     /* Sanity Check: Minimum argument check */
 #ifdef GTRACK_3D
@@ -259,30 +261,29 @@ int32_t MmwDemo_CLIStaticBoundaryBoxCfg (int32_t argc, char* argv[])
     if (argc != 5)
 #endif
     {
-        CLI_write ("Error: Invalid usage of the CLI command\n");
+        CLI_write("Error: Invalid usage of the CLI command\n");
         return -1;
     }
 
     /* Initialize the ADC Output configuration: */
-    //memset ((void *)&sceneryParams, 0, sizeof(GTRACK_sceneryParams));
-    
+    // memset ((void *)&sceneryParams, 0, sizeof(GTRACK_sceneryParams));
+
     /* Populate configuration: */
-    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.numStaticBoxes = 1;
-    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.staticBox[0].x1 = (float) atof (argv[1]);
-    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.staticBox[0].x2 = (float) atof (argv[2]);
-    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.staticBox[0].y1 = (float) atof (argv[3]);
-    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.staticBox[0].y2 = (float) atof (argv[4]);
-    
+    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.numStaticBoxes  = 1;
+    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.staticBox[0].x1 = (float)atof(argv[1]);
+    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.staticBox[0].x2 = (float)atof(argv[2]);
+    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.staticBox[0].y1 = (float)atof(argv[3]);
+    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.staticBox[0].y2 = (float)atof(argv[4]);
+
 #ifdef GTRACK_3D
-    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.staticBox[0].z1 = (float) atof (argv[5]);
-    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.staticBox[0].z2 = (float) atof (argv[6]);
+    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.staticBox[0].z1 = (float)atof(argv[5]);
+    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.staticBox[0].z2 = (float)atof(argv[6]);
 #endif
 
     return 0;
-    
 }
 
-int32_t MmwDemo_CLIBoundaryBoxCfg (int32_t argc, char* argv[])
+int32_t MmwDemo_CLIBoundaryBoxCfg(int32_t argc, char *argv[])
 {
     /* Sanity Check: Minimum argument check */
 #ifdef GTRACK_3D
@@ -291,37 +292,37 @@ int32_t MmwDemo_CLIBoundaryBoxCfg (int32_t argc, char* argv[])
     if (argc != 5)
 #endif
     {
-        CLI_write ("Error: Invalid usage of the CLI command\n");
+        CLI_write("Error: Invalid usage of the CLI command\n");
         return -1;
     }
 
     /* Initialize the ADC Output configuration: */
-    //memset ((void *)&sceneryParams, 0, sizeof(GTRACK_sceneryParams));
-    
+    // memset ((void *)&sceneryParams, 0, sizeof(GTRACK_sceneryParams));
+
     /* Populate configuration: */
-    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.numBoundaryBoxes = 1;
-    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[0].x1 = (float) atof (argv[1]);
-    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[0].x2 = (float) atof (argv[2]);
-    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[0].y1 = (float) atof (argv[3]);
-    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[0].y2 = (float) atof (argv[4]);
+    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.numBoundaryBoxes  = 1;
+    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[0].x1 = (float)atof(argv[1]);
+    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[0].x2 = (float)atof(argv[2]);
+    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[0].y1 = (float)atof(argv[3]);
+    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[0].y2 = (float)atof(argv[4]);
 #ifdef GTRACK_3D
-    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[0].z1 = (float) atof (argv[5]);
-    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[0].z2 = (float) atof (argv[6]);
+    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[0].z1 = (float)atof(argv[5]);
+    gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[0].z2 = (float)atof(argv[6]);
 #endif
-    if (argc == 13) {  //second boundary box
-        gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.numBoundaryBoxes = 2;
-        gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[1].x1 = (float) atof (argv[7]);
-        gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[1].x2 = (float) atof (argv[8]);
-        gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[1].y1 = (float) atof (argv[9]);
-        gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[1].y2 = (float) atof (argv[10]);
-    #ifdef GTRACK_3D
-        gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[1].z1 = (float) atof (argv[11]);
-        gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[1].z2 = (float) atof (argv[12]);
-    #endif
+    if (argc == 13)
+    { // second boundary box
+        gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.numBoundaryBoxes  = 2;
+        gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[1].x1 = (float)atof(argv[7]);
+        gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[1].x2 = (float)atof(argv[8]);
+        gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[1].y1 = (float)atof(argv[9]);
+        gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[1].y2 = (float)atof(argv[10]);
+#ifdef GTRACK_3D
+        gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[1].z1 = (float)atof(argv[11]);
+        gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.boundaryBox[1].z2 = (float)atof(argv[12]);
+#endif
     }
-    
+
     return 0;
-    
 }
 
 /**
@@ -339,7 +340,7 @@ int32_t MmwDemo_CLIBoundaryBoxCfg (int32_t argc, char* argv[])
  *  @retval
  *      Error   -   <0
  */
-int32_t MmwDemo_CLIGatingParamCfg (int32_t argc, char* argv[])
+int32_t MmwDemo_CLIGatingParamCfg(int32_t argc, char *argv[])
 {
     /* Sanity Check: Minimum argument check */
 #ifdef GTRACK_3D
@@ -348,25 +349,24 @@ int32_t MmwDemo_CLIGatingParamCfg (int32_t argc, char* argv[])
     if (argc != 5)
 #endif
     {
-        CLI_write ("Error: Invalid usage of the CLI command\n");
+        CLI_write("Error: Invalid usage of the CLI command\n");
         return -1;
     }
     /* Initialize the ADC Output configuration: */
-    //memset ((void *)&gatingParams, 0, sizeof(GTRACK_gatingParams));
-    
+    // memset ((void *)&gatingParams, 0, sizeof(GTRACK_gatingParams));
+
     /* Populate configuration: */
-    gMmwMssMCB.trackerCfg.staticCfg.gatingParams.gain = (float) atof (argv[1]);
-    gMmwMssMCB.trackerCfg.staticCfg.gatingParams.limits.width = (float) atof (argv[2]);
-    gMmwMssMCB.trackerCfg.staticCfg.gatingParams.limits.depth = (float) atof (argv[3]);
+    gMmwMssMCB.trackerCfg.staticCfg.gatingParams.gain         = (float)atof(argv[1]);
+    gMmwMssMCB.trackerCfg.staticCfg.gatingParams.limits.width = (float)atof(argv[2]);
+    gMmwMssMCB.trackerCfg.staticCfg.gatingParams.limits.depth = (float)atof(argv[3]);
 #ifdef GTRACK_3D
-    gMmwMssMCB.trackerCfg.staticCfg.gatingParams.limits.height = (float) atof (argv[4]);
-    gMmwMssMCB.trackerCfg.staticCfg.gatingParams.limits.vel = (float) atof (argv[5]);
+    gMmwMssMCB.trackerCfg.staticCfg.gatingParams.limits.height = (float)atof(argv[4]);
+    gMmwMssMCB.trackerCfg.staticCfg.gatingParams.limits.vel    = (float)atof(argv[5]);
 #else
-    gMmwMssMCB.trackerCfg.staticCfg.gatingParams.limits.vel = (float) atof (argv[4]);
+    gMmwMssMCB.trackerCfg.staticCfg.gatingParams.limits.vel = (float)atof(argv[4]);
 #endif
 
     return 0;
-    
 }
 
 
@@ -385,28 +385,27 @@ int32_t MmwDemo_CLIGatingParamCfg (int32_t argc, char* argv[])
  *  @retval
  *      Error   -   <0
  */
-int32_t MmwDemo_CLIStateParamCfg (int32_t argc, char* argv[])
+int32_t MmwDemo_CLIStateParamCfg(int32_t argc, char *argv[])
 {
     /* Sanity Check: Minimum argument check */
     if (argc != 7)
     {
-        CLI_write ("Error: Invalid usage of the CLI command\n");
+        CLI_write("Error: Invalid usage of the CLI command\n");
         return -1;
     }
 
     /* Initialize the ADC Output configuration: */
-    //memset ((void *)&stateParams, 0, sizeof(GTRACK_stateParams));
-    
+    // memset ((void *)&stateParams, 0, sizeof(GTRACK_stateParams));
+
     /* Populate configuration: */
-    gMmwMssMCB.trackerCfg.staticCfg.stateParams.det2actThre = (uint16_t) atoi (argv[1]);
-    gMmwMssMCB.trackerCfg.staticCfg.stateParams.det2freeThre= (uint16_t) atoi (argv[2]);
-    gMmwMssMCB.trackerCfg.staticCfg.stateParams.active2freeThre= (uint16_t) atoi (argv[3]);
-    gMmwMssMCB.trackerCfg.staticCfg.stateParams.static2freeThre= (uint16_t) atoi (argv[4]);
-    gMmwMssMCB.trackerCfg.staticCfg.stateParams.exit2freeThre= (uint16_t) atoi (argv[5]);
-    gMmwMssMCB.trackerCfg.staticCfg.stateParams.sleep2freeThre = (uint16_t) atoi (argv[6]);
+    gMmwMssMCB.trackerCfg.staticCfg.stateParams.det2actThre     = (uint16_t)atoi(argv[1]);
+    gMmwMssMCB.trackerCfg.staticCfg.stateParams.det2freeThre    = (uint16_t)atoi(argv[2]);
+    gMmwMssMCB.trackerCfg.staticCfg.stateParams.active2freeThre = (uint16_t)atoi(argv[3]);
+    gMmwMssMCB.trackerCfg.staticCfg.stateParams.static2freeThre = (uint16_t)atoi(argv[4]);
+    gMmwMssMCB.trackerCfg.staticCfg.stateParams.exit2freeThre   = (uint16_t)atoi(argv[5]);
+    gMmwMssMCB.trackerCfg.staticCfg.stateParams.sleep2freeThre  = (uint16_t)atoi(argv[6]);
 
     return 0;
-    
 }
 
 /**
@@ -424,7 +423,7 @@ int32_t MmwDemo_CLIStateParamCfg (int32_t argc, char* argv[])
  *  @retval
  *      Error   -   <0
  */
-int32_t MmwDemo_CLIAllocationParamCfg (int32_t argc, char* argv[])
+int32_t MmwDemo_CLIAllocationParamCfg(int32_t argc, char *argv[])
 {
     /* Sanity Check: Minimum argument check */
 #ifdef GTRACK_3D
@@ -433,33 +432,32 @@ int32_t MmwDemo_CLIAllocationParamCfg (int32_t argc, char* argv[])
     if (argc != 6)
 #endif
     {
-        CLI_write ("Error: Invalid usage of the CLI command\n");
+        CLI_write("Error: Invalid usage of the CLI command\n");
         return -1;
     }
 
     /* Initialize the ADC Output configuration: */
-    //memset ((void *)&allocationParams, 0, sizeof(GTRACK_allocationParams));
+    // memset ((void *)&allocationParams, 0, sizeof(GTRACK_allocationParams));
 
     /* Populate configuration: */
-    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.snrThre = (float) atof (argv[1]);
+    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.snrThre = (float)atof(argv[1]);
 #ifdef GTRACK_3D
-    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.snrThreObscured = (float) atof (argv[2]);
-    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.velocityThre = (float) atof (argv[3]);
-    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.pointsThre = (uint16_t) atoi (argv[4]);
-    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.maxDistanceThre = (float) atof (argv[5]);
-    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.maxVelThre = (float) atof (argv[6]);
+    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.snrThreObscured = (float)atof(argv[2]);
+    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.velocityThre    = (float)atof(argv[3]);
+    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.pointsThre      = (uint16_t)atoi(argv[4]);
+    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.maxDistanceThre = (float)atof(argv[5]);
+    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.maxVelThre      = (float)atof(argv[6]);
 #else
-    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.velocityThre = (float) atof (argv[2]);
-    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.pointsThre = (uint16_t) atoi (argv[3]);
-    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.maxDistanceThre = (float) atof (argv[4]);
-    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.maxVelThre = (float) atof (argv[5]);
+    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.velocityThre    = (float)atof(argv[2]);
+    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.pointsThre      = (uint16_t)atoi(argv[3]);
+    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.maxDistanceThre = (float)atof(argv[4]);
+    gMmwMssMCB.trackerCfg.staticCfg.allocationParams.maxVelThre      = (float)atof(argv[5]);
 #endif
 
     return 0;
-    
 }
 
-int32_t MmwDemoCLIMaxAccelerationParamCfg(int32_t argc, char* argv[])
+int32_t MmwDemoCLIMaxAccelerationParamCfg(int32_t argc, char *argv[])
 {
 #ifdef GTRACK_3D
     if (argc != 4)
@@ -467,19 +465,18 @@ int32_t MmwDemoCLIMaxAccelerationParamCfg(int32_t argc, char* argv[])
     if (argc != 3)
 #endif
     {
-        CLI_write ("Error: Invalid usage of the CLI command\n");
+        CLI_write("Error: Invalid usage of the CLI command\n");
         return -1;
     }
-    
-    gMmwMssMCB.trackerCfg.staticCfg.accelerationParams[0] = (float) atof (argv[1]);
-    gMmwMssMCB.trackerCfg.staticCfg.accelerationParams[1] = (float) atof (argv[2]);
-#ifdef GTRACK_3D    
-    gMmwMssMCB.trackerCfg.staticCfg.accelerationParams[2] = (float) atof (argv[3]);
+
+    gMmwMssMCB.trackerCfg.staticCfg.accelerationParams[0] = (float)atof(argv[1]);
+    gMmwMssMCB.trackerCfg.staticCfg.accelerationParams[1] = (float)atof(argv[2]);
+#ifdef GTRACK_3D
+    gMmwMssMCB.trackerCfg.staticCfg.accelerationParams[2] = (float)atof(argv[3]);
 #endif
-    
+
     gMmwMssMCB.trackerCfg.staticCfg.isCliCmdMaxAccelParamReceived = 1;
     return 0;
-
 }
 
 /**
@@ -497,38 +494,35 @@ int32_t MmwDemoCLIMaxAccelerationParamCfg(int32_t argc, char* argv[])
  *  @retval
  *      Error   -   <0
  */
-int32_t MmwDemo_CLIPresenceParamCfg (int32_t argc, char* argv[])
+int32_t MmwDemo_CLIPresenceParamCfg(int32_t argc, char *argv[])
 {
     /* Sanity Check: Minimum argument check */
     if (argc != 7)
     {
-        CLI_write ("Error: Invalid usage of the CLI command\n");
+        CLI_write("Error: Invalid usage of the CLI command\n");
         return -1;
     }
 
     /* Hardcode presence detection thresholds */
-    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.pointsThre= 3;//(uint16_t) atoi (argv[1]);
-    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.velocityThre= 0.5;//(uint16_t) atoi (argv[2]);
-    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.on2offThre= 10;//(uint16_t) atoi (argv[3]);
+    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.pointsThre   = 3; //(uint16_t) atoi (argv[1]);
+    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.velocityThre = 0.5; //(uint16_t) atoi (argv[2]);
+    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.on2offThre   = 10; //(uint16_t) atoi (argv[3]);
     /* Only one presence detection boundary box supported for now */
-    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.numOccupancyBoxes= 1;
+    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.numOccupancyBoxes = 1;
 
     /* Set presence detection enabled flag */
-    if( ( gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.numBoundaryBoxes > 0)
-            && ( gMmwMssMCB.trackerCfg.staticCfg.presenceParams.pointsThre > 0))
+    if ((gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.numBoundaryBoxes > 0) && (gMmwMssMCB.trackerCfg.staticCfg.presenceParams.pointsThre > 0))
     {
-        //gMmwMssMCB.presenceDetEnabled = true;
+        // gMmwMssMCB.presenceDetEnabled = true;
     }
-    
+
     /* Boundary Box configuration */
-    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.occupancyBox[0].x1= (float) atof (argv[1]);
-    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.occupancyBox[0].x2= (float) atof (argv[2]);
-    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.occupancyBox[0].y1= (float) atof (argv[3]);
-    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.occupancyBox[0].y2= (float) atof (argv[4]);
-    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.occupancyBox[0].z1= (float) atof (argv[5]);
-    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.occupancyBox[0].z2= (float) atof (argv[6]);
+    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.occupancyBox[0].x1 = (float)atof(argv[1]);
+    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.occupancyBox[0].x2 = (float)atof(argv[2]);
+    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.occupancyBox[0].y1 = (float)atof(argv[3]);
+    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.occupancyBox[0].y2 = (float)atof(argv[4]);
+    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.occupancyBox[0].z1 = (float)atof(argv[5]);
+    gMmwMssMCB.trackerCfg.staticCfg.presenceParams.occupancyBox[0].z2 = (float)atof(argv[6]);
 
     return 0;
-    
 }
-

@@ -34,329 +34,338 @@
 #define MMW_CLI_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /* mmWave SDK Include Files: */
 #include <control/mmwave/mmwave.h>
 #include <drivers/uart.h>
 #include <drivers/mcspi.h>
-#include <datapath/dpu/doaproc/v0/doaproc.h>
-#include <datapath/dpu/aoasvcproc/v0/aoasvcproc.h>
+#include "doaproc/v1/doaproc.h"
+#include "aoasvcproc/v1/aoasvcproc.h"
 #include <drivers/soc.h>
 #include "ti_drivers_config.h"
 #include "ti_cli_mpd_demo_config.h"
 #include "FreeRTOS.h"
 #include "task.h"
 
-/**************************************************************************
- ************************* CLI Module Definitions *************************
- **************************************************************************/
+    /**************************************************************************
+     ************************* CLI Module Definitions *************************
+     **************************************************************************/
 
-#define     CLI_MAX_CMD         60
+#define CLI_MAX_CMD 60
 
-#define     CLI_MAX_ARGS        40
+#define CLI_MAX_ARGS 40
 
-#define MAX_RADAR_CMD 35
+#define MAX_RADAR_CMD     20
 #define MAX_RADAR_CMD_AOP 21
-#define MAX_PRESENCE_CMD 16
-#define MAX_TRACKER_CMD  20
+#define MAX_PRESENCE_CMD  16
+#define MAX_TRACKER_CMD   20
 
 /* These defines need to move to common files. */
-#define MMWAVE_SDK_VERSION_BUILD  2
-#define MMWAVE_SDK_VERSION_BUGFIX 4
+#define MMWAVE_SDK_VERSION_BUILD  1
+#define MMWAVE_SDK_VERSION_BUGFIX 0
 #define MMWAVE_SDK_VERSION_MINOR  5
 #define MMWAVE_SDK_VERSION_MAJOR  5
 
-/**************************************************************************
- ************************** CLI Data Structures ***************************
- **************************************************************************/
+    /**************************************************************************
+     ************************** CLI Data Structures ***************************
+     **************************************************************************/
 
-typedef void*   CLI_Handle;
-
-/**
- * @brief   CLI command handler:
- *
- *  @param[in]  argc
- *      Number of arguments
- *  @param[in]  argv
- *      Pointer to the arguments
- *
- *  @retval
- *      Success     - 0
- *  @retval
- *      Error       - <0
- */
-typedef int32_t (*CLI_CmdHandler)(int32_t argc, char* argv[]);
-
-typedef struct CLI_CmdTableEntry_t
-{
-    /**
-     * @brief   Command string
-     */
-    char*               cmd;
+    typedef void *CLI_Handle;
 
     /**
-     * @brief   CLI Command Help string
+     * @brief   CLI command handler:
+     *
+     *  @param[in]  argc
+     *      Number of arguments
+     *  @param[in]  argv
+     *      Pointer to the arguments
+     *
+     *  @retval
+     *      Success     - 0
+     *  @retval
+     *      Error       - <0
      */
-    char*               helpString;
+    typedef int32_t (*CLI_CmdHandler)(int32_t argc, char *argv[]);
 
-    /**
-     * @brief   Command Handler to be executed
-     */
-    CLI_CmdHandler      cmdHandlerFxn;
-}CLI_CmdTableEntry;
+    typedef struct CLI_CmdTableEntry_t
+    {
+        /**
+         * @brief   Command string
+         */
+        char *cmd;
 
-typedef struct CLI_Cfg_t
-{
-    /**
-     * @brief   CLI Prompt string (if any to be displayed)
-     */
-    char*               cliPrompt;
+        /**
+         * @brief   CLI Command Help string
+         */
+        char *helpString;
 
-    /**
-     * @brief   Optional banner string if any to be displayed on startup of the CLI
-     */
-    char*               cliBanner;
+        /**
+         * @brief   Command Handler to be executed
+         */
+        CLI_CmdHandler cmdHandlerFxn;
+    } CLI_CmdTableEntry;
 
-    /**
-     * @brief   UART Handle used by the CLI
-     */
-    UART_Handle         UartHandle;
+    typedef struct CLI_Cfg_t
+    {
+        /**
+         * @brief   CLI Prompt string (if any to be displayed)
+         */
+        char *cliPrompt;
 
-    /**
-     * @brief   The CLI has an mmWave extension which can be enabled by this
-     * field. The extension supports the well define mmWave link CLI command(s)
-     * In order to use the extension the application should have initialized
-     * and setup the mmWave.
-     */
-    uint8_t             enableMMWaveExtension;
+        /**
+         * @brief   Optional banner string if any to be displayed on startup of the CLI
+         */
+        char *cliBanner;
 
-    /**
-     * @brief   The mmWave control handle which needs to be specified if
-     * the mmWave extensions are being used. The CLI Utility works only
-     * in the FULL configuration mode. If the handle is opened in
-     * MINIMAL configuration mode the CLI mmWave extension will fail
-     */
-    MMWave_Handle       mmWaveHandle;
+        /**
+         * @brief   UART Handle used by the CLI
+         */
+        UART_Handle UartHandle;
 
-    /**
-     * @brief   Task Priority: The CLI executes in the context of a task
-     * which executes with this priority
-     */
-    uint8_t             taskPriority;
+        /**
+         * @brief   The CLI has an mmWave extension which can be enabled by this
+         * field. The extension supports the well define mmWave link CLI command(s)
+         * In order to use the extension the application should have initialized
+         * and setup the mmWave.
+         */
+        uint8_t enableMMWaveExtension;
 
-    /**
-     * @brief   Flag which determines if the CLI Write should use the UART
-     * in polled or blocking mode.
-     */
-    bool                usePolledMode;
+        /**
+         * @brief   The mmWave control handle which needs to be specified if
+         * the mmWave extensions are being used. The CLI Utility works only
+         * in the FULL configuration mode. If the handle is opened in
+         * MINIMAL configuration mode the CLI mmWave extension will fail
+         */
+        MMWave_Handle mmWaveHandle;
 
-    /**
-     * @brief   Flag which determines if the CLI should override the platform
-     * string reported in @ref CLI_MMWaveVersion.
-     */
-    bool                overridePlatform;
+        /**
+         * @brief   Task Priority: The CLI executes in the context of a task
+         * which executes with this priority
+         */
+        uint8_t taskPriority;
 
-    /**
-     * @brief   Optional platform string to be used in @ref CLI_MMWaveVersion
-     */
-    char*               overridePlatformString;
+        /**
+         * @brief   Flag which determines if the CLI Write should use the UART
+         * in polled or blocking mode.
+         */
+        bool usePolledMode;
 
-    /**
-     * @brief   This is the table which specifies the supported CLI commands
-     */
-    CLI_CmdTableEntry   tableEntry[CLI_MAX_CMD];
-}CLI_Cfg;
+        /**
+         * @brief   Flag which determines if the CLI should override the platform
+         * string reported in @ref CLI_MMWaveVersion.
+         */
+        bool overridePlatform;
 
-typedef struct CLI_GuiMonSel_t
-{
-    /*! @brief   Send list of detected objects (see @ref MmwDemo_detectedObj_t) */
-    uint8_t        pointCloud;
+        /**
+         * @brief   Optional platform string to be used in @ref CLI_MMWaveVersion
+         */
+        char *overridePlatformString;
 
-    /*! @brief   Send range profile array  */
-    uint8_t        rangeProfile;
+        /**
+         * @brief   This is the table which specifies the supported CLI commands
+         */
+        CLI_CmdTableEntry tableEntry[CLI_MAX_CMD];
+    } CLI_Cfg;
 
-    /*! @brief   Send noise floor profile */
-    uint8_t        noiseProfile;
+    typedef struct CLI_GuiMonSel_t
+    {
+        /*! @brief   Send list of detected objects (see @ref MmwDemo_detectedObj_t) */
+        uint8_t pointCloud;
 
-    /*! @brief   Send complex range bins at zero doppler, all antenna symbols for range-azimuth heat map */
-    uint8_t        rangeAzimuthHeatMap;
+        /*! @brief   Send range profile array  */
+        uint8_t rangeProfile;
 
-    /*! @brief   Send complex range bins at zero doppler, (all antenna symbols), for range-azimuth heat map */
-    uint8_t        rangeDopplerHeatMap;
+        /*! @brief   Send noise floor profile */
+        uint8_t noiseProfile;
 
-    /*! @brief   Send stats */
-    uint8_t        statsInfo;
+        /*! @brief   Send complex range bins at zero doppler, all antenna symbols for range-azimuth heat map */
+        uint8_t rangeAzimuthHeatMap;
 
-    /*! @brief   Presence info */
-    uint8_t        presenceInfo;
+        /*! @brief   Send complex range bins at zero doppler, (all antenna symbols), for range-azimuth heat map */
+        uint8_t rangeDopplerHeatMap;
 
-    /*! @brief   Send tracker info */
-    uint8_t        trackerInfo;
+        /*! @brief   Send stats */
+        uint8_t statsInfo;
 
-    /*! @brief   Send micro doppler info */
-    uint8_t        microDopplerInfo;
+        /*! @brief   Presence info */
+        uint8_t presenceInfo;
 
-    /*! @brief   Send ADC samples of the last chirp pair in the frame */
-    uint8_t       adcSamples;
+        /*! @brief   Send tracker info */
+        uint8_t trackerInfo;
 
-    /*! @brief   Classifier Information */
-    uint8_t       classifierInfo;
+        /*! @brief   Send micro doppler info */
+        uint8_t microDopplerInfo;
 
-    /*! @brief   Config information for quick eval visualizer plots */
-    uint8_t       quickEvalInfo;
+        /*! @brief   Send ADC samples of the last chirp pair in the frame */
+        uint8_t adcSamples;
 
-    uint8_t       reserved;
+        /*! @brief   Classifier Information */
+        uint8_t classifierInfo;
 
-} CLI_GuiMonSel;
+        /*! @brief   Config information for quick eval visualizer plots */
+        uint8_t quickEvalInfo;
 
-typedef struct CLI_sigProcChainCfg_t
-{
-    /*! @brief  Azimuth FFT size */
-    uint16_t    azimuthFftSize;
+        uint8_t reserved;
 
-    /*! @brief  Elevation FFT size */
-    uint16_t    elevationFftSize;
+    } CLI_GuiMonSel;
 
-    /*! @brief  Motion detection mode: 1 - Major motion detection only,
-     *                                  2 - Minor motion detection only */
-    uint16_t    motDetMode;
+    typedef struct CLI_GuiMonDebugSel_t
+    {
+        /*! @brief   Send list of detected objects (see @ref MmwDemo_detectedObj_t) */
+        uint8_t pointCloudAntennaSymbols;
 
-    /*! @brief  Doppler coherent combining: 0 - non-coherent summation along Doppler dimension
-     *                                       1 - maximum (coherent) peak selection along Doppler dimentsion
-     *                                       2 - non-coherent summation for heatmap calculation, and max-doppler index for doppler calculation */
-    uint16_t    coherentDoppler;
+    } CLI_GuiMonDebugSel;
 
-    /*! @brief  Number of frames across which the chirps are collected for Minor motion detection */
-    uint16_t    numFrmPerMinorMotProc;
+    typedef struct CLI_SteerVecCorrCfg_t
+    {
+        /*! @brief   enable antenna symbol generation */
+        uint8_t enableAntSymbGen;
 
-    /*! @brief  Number of Doppler chirps per frame used for minor motion detection  */
-    uint16_t    numMinorMotionChirpsPerFrame;
+        /*! @brief   enable point-cloud angle correction using steering vectors */
+        uint8_t enableSteeringVectorCorrection;
 
-    /*! @brief  Minor motion radial velocity inclusion threshold (m/sec) (exclude points with radial velocites greater than threshold) */
-    float       minorMotionVelocityInclusionThr;
+        /*! @brief   enable point-cloud angle correction using steering vectors */
+        uint8_t enableAngleInterpolation;
 
-    /*! @brief  Force radial velocity of included minor motion points to zero */
-    bool        forceMinorMotionVelocityToZero;
+    } CLI_SteerVecCorrCfg;
 
-} CLI_sigProcChainCfg;
+    typedef struct CLI_sigProcChainCfg_t
+    {
+        /*! @brief  Azimuth FFT size */
+        uint16_t azimuthFftSize;
 
-typedef struct CLI_profileSwitchCfg_t
-{
-    /*! @brief profile switch enable */
-    uint8_t switchCfgEnable;
+        /*! @brief  Elevation FFT size */
+        uint16_t elevationFftSize;
 
-    /*! @brief Threshold on number of frames for switching from presence to tracker state*/
-    uint16_t frmPretoTrack;
+        /*! @brief  Motion detection mode: 1 - Major motion detection only,
+         *                                  2 - Minor motion detection only */
+        uint16_t motDetMode;
 
-    /*! @brief Threshold on number of frames for switching from tracker to presence state*/
-    uint16_t frmTracktoPre;
+        /*! @brief  Doppler coherent combining: 0 - non-coherent summation along Doppler dimension
+         *                                       1 - maximum (coherent) peak selection along Doppler dimentsion
+         *                                       2 - non-coherent summation for heatmap calculation, and max-doppler index for doppler calculation */
+        uint16_t coherentDoppler;
 
-}CLI_profileSwitchCfg;
+        /*! @brief  Number of frames across which the chirps are collected for Minor motion detection */
+        uint16_t numFrmPerMinorMotProc;
 
-typedef struct CLI_adcLoggingCfg_t
-{
-    /*! @brief ADC logging enable or disable */
-    uint8_t enable;
+        /*! @brief  Number of Doppler chirps per frame used for minor motion detection  */
+        uint16_t numMinorMotionChirpsPerFrame;
 
-    /*! @brief Sideband data enable or disable */
-    uint8_t sideBandEnable;
+        /*! @brief  Minor motion radial velocity inclusion threshold (m/sec) (exclude points with radial velocites greater than threshold) */
+        float minorMotionVelocityInclusionThr;
 
-    /*! @brief Swizzling mode:  0 - Pin0-bit0-Cycle1 Mode
-     *                          1 - Pin3-bit0-Cycle1 Mode
-     *                          2 - Pin0-bit0-Cycle3 Mode
-     *                          3 - Pin3-bit0-Cycle3 Mode */
-    uint8_t swizzlingMode;
-    
-    /*! @brief RDIF Scrambler Mode enable or disable */
-    uint8_t scramblerMode;
-    
-    /*! @brief Lane rate configuration: 0 - Combined Lane Rate: 400Mbps 
-     *                                  1 - Combined Lane Rate: 320Mbps
-     *                                  2 - Combined Lane Rate: 200Mbps
-     *                                  3 - Combined Lane Rate: 160Mbps
-     *                                  4 - Combined Lane Rate: 100Mbps */
-    uint8_t laneRate;
+        /*! @brief  Force radial velocity of included minor motion points to zero */
+        bool forceMinorMotionVelocityToZero;
 
-}CLI_adcLoggingCfg;
+        /*! @brief  Processing chain doppler/elevation dimension reduction order : 0 - elevation first Doppler second, 1 - Doppler first elevation second */
+        uint8_t dopElevDimReductOrder;
 
-typedef struct CLI_MCB_t
-{
-    /**
-     * @brief   Configuration which was used to configure the CLI module
-     */
-    CLI_Cfg         cfg;
+    } CLI_sigProcChainCfg;
 
-    /**
-     * @brief   This is the number of CLI commands which have been added to the module
-     */
-    uint32_t        numCLICommands;
+    typedef struct CLI_profileSwitchCfg_t
+    {
+        /*! @brief profile switch enable */
+        uint8_t switchCfgEnable;
 
-    /**
-     * @brief   CLI Task Handle:
-     */
-    TaskHandle_t     cliTaskHandle;
+        /*! @brief Threshold on number of frames for switching from presence to tracker state*/
+        uint16_t frmPretoTrack;
 
-    /**
-     * @brief   CLI BYTask Semaphore Handle:
-     */
-    SemaphoreP_Object cliBypasssemaphoreObj;
-}CLI_MCB;
+        /*! @brief Threshold on number of frames for switching from tracker to presence state*/
+        uint16_t frmTracktoPre;
 
-#if (SPI_ADC_DATA_STREAMING==1)
-    /* Size of Buffer to store ADC Data */
-    /*Important Note: User has to modify this size based on amount of ADC data streamed per frame. Now kept 8KB. User has to allocate as per their configuration */
-    /*If this size is less than number of ADC Samples per frame, it could result in crashing of demo*/
-    #define  ADC_DATA_BUFF_MAX_SIZE (8192U)
+    } CLI_profileSwitchCfg;
 
-    /* MCSPI Instance Macros */
-    #define CONFIG_MCSPI0 (0U)
-    #define CONFIG_MCSPI_NUM_INSTANCES (1U)
-    #define CONFIG_MCSPI_NUM_DMA_INSTANCES (1U)
+    typedef struct CLI_adcLoggingCfg_t
+    {
+        /*! @brief ADC logging enable or disable */
+        uint8_t enable;
 
-    /* MCSPI Channel Macros */
-    #define CONFIG_MCSPI0_NUM_CH (1U)
+        /*! @brief Sideband data enable or disable */
+        uint8_t sideBandEnable;
 
-    #define EDMA_TEST_EVT_QUEUE_NO      (0U)
+        /*! @brief Swizzling mode:  0 - Pin0-bit0-Cycle1 Mode
+         *                          1 - Pin3-bit0-Cycle1 Mode
+         *                          2 - Pin0-bit0-Cycle3 Mode
+         *                          3 - Pin3-bit0-Cycle3 Mode */
+        uint8_t swizzlingMode;
+
+        /*! @brief RDIF Scrambler Mode enable or disable */
+        uint8_t scramblerMode;
+
+        /*! @brief Lane rate configuration: 0 - Combined Lane Rate: 400Mbps
+         *                                  1 - Combined Lane Rate: 320Mbps
+         *                                  2 - Combined Lane Rate: 200Mbps
+         *                                  3 - Combined Lane Rate: 160Mbps
+         *                                  4 - Combined Lane Rate: 100Mbps */
+        uint8_t laneRate;
+
+    } CLI_adcLoggingCfg;
+
+    typedef struct CLI_MCB_t
+    {
+        /**
+         * @brief   Configuration which was used to configure the CLI module
+         */
+        CLI_Cfg cfg;
+
+        /**
+         * @brief   This is the number of CLI commands which have been added to the module
+         */
+        uint32_t numCLICommands;
+
+        /**
+         * @brief   CLI Task Handle:
+         */
+        TaskHandle_t cliTaskHandle;
+
+        /**
+         * @brief   CLI BYTask Semaphore Handle:
+         */
+        SemaphoreP_Object cliBypasssemaphoreObj;
+    } CLI_MCB;
+
+#if (SPI_ADC_DATA_STREAMING == 1)
+/* Size of Buffer to store ADC Data */
+/*Important Note: User has to modify this size based on amount of ADC data streamed per frame. Now kept 8KB. User has to allocate as per their configuration */
+/*If this size is less than number of ADC Samples per frame, it could result in crashing of demo*/
+#define ADC_DATA_BUFF_MAX_SIZE (8192U)
+
+/* MCSPI Instance Macros */
+#define CONFIG_MCSPI0                  (0U)
+#define CONFIG_MCSPI_NUM_INSTANCES     (1U)
+#define CONFIG_MCSPI_NUM_DMA_INSTANCES (1U)
+
+/* MCSPI Channel Macros */
+#define CONFIG_MCSPI0_NUM_CH (1U)
+
+#define EDMA_TEST_EVT_QUEUE_NO (0U)
     /* MCSPI Driver handle */
-    extern MCSPI_Handle gMcspiHandle[CONFIG_MCSPI_NUM_INSTANCES];
+    extern MCSPI_Handle   gMcspiHandle[CONFIG_MCSPI_NUM_INSTANCES];
     extern MCSPI_ChConfig gConfigMcspi0ChCfg[CONFIG_MCSPI0_NUM_CH];
 
     /* MCSPI Driver open/close - can be used by application when Driver_open() and
-    * Driver_close() is not used directly and app wants to control the various driver
-    * open/close sequences */
-    void Drivers_mcspiOpen(void);
-    void Drivers_mcspiClose(void);
-    extern uint8_t adcbuffer[ADC_DATA_BUFF_MAX_SIZE];
+     * Driver_close() is not used directly and app wants to control the various driver
+     * open/close sequences */
+    void            Drivers_mcspiOpen(void);
+    void            Drivers_mcspiClose(void);
+    extern uint8_t  adcbuffer[ADC_DATA_BUFF_MAX_SIZE];
     extern uint32_t adcDataPerFrame;
 
 #endif
-
-/* NOT USED */
-typedef struct CLI_SteerVecCorrCfg_t
-{
-    /*! @brief   enable antenna symbol generation */
-    uint8_t      enableAntSymbGen;
-
-    /*! @brief   enable point-cloud angle correction using steering vectors */
-    uint8_t      enableSteeringVectorCorrection;
-
-    /*! @brief   enable azimuth angle interpolation */
-    uint8_t      enableAngleInterpolation;
-
-} CLI_SteerVecCorrCfg;
-
-/**************************************************************************
- *************************** Extern Definitions ***************************
- **************************************************************************/
-int32_t CLI_open (CLI_Cfg* ptrCLICfg);
-void    CLI_write (const char* format, ...);
-int32_t CLI_readLine(UART_Handle uartHandle, char *lineBuf, uint32_t bufSize);
-int32_t CLI_close (void);
-void    CLI_getMMWaveExtensionConfig(MMWave_CtrlCfg* ptrCtrlCfg);
-void    CLI_getMMWaveExtensionOpenConfig(MMWave_OpenCfg* ptrOpenCfg);
-void    CLI_init (uint8_t taskPriority);
+    /**************************************************************************
+     *************************** Extern Definitions ***************************
+     **************************************************************************/
+    int32_t CLI_open(CLI_Cfg *ptrCLICfg);
+    void    CLI_write(const char *format, ...);
+    int32_t CLI_readLine(UART_Handle uartHandle, char *lineBuf, uint32_t bufSize);
+    int32_t CLI_close(void);
+    void    CLI_getMMWaveExtensionConfig(MMWave_CtrlCfg *ptrCtrlCfg);
+    void    CLI_getMMWaveExtensionOpenConfig(MMWave_OpenCfg *ptrOpenCfg);
+    void    CLI_init(uint8_t taskPriority);
 #ifdef __cplusplus
 }
 #endif

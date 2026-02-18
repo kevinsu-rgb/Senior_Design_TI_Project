@@ -70,17 +70,17 @@ extern MmwDemo_MSS_MCB gMmwMssMCB;
 // LED config
 extern uint32_t gpioBaseAddrLed, pinNumLed;
 
-//The function reads the FRAME_REF_TIMER that runs free at 40MHz
+// The function reads the FRAME_REF_TIMER that runs free at 40MHz
 uint32_t Cycleprofiler_getTimeStamp(void)
 {
     uint32_t *frameRefTimer;
-    frameRefTimer = (uint32_t *) 0x5B000020;
+    frameRefTimer = (uint32_t *)0x5B000020;
     return *frameRefTimer;
 }
 
 /**
-*  @b Description
-*  @n
+ *  @b Description
+ *  @n
  *      The function copies sensor position configuration to tracker configuration structure
  *
  */
@@ -94,26 +94,24 @@ void MmwDemo_FillTrackerSensorPositionCfg()
     memcpy(&gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.sensorOrientation, &gMmwMssMCB.sceneryParams.sensorOrientation, sizeof(GTRACK_sensorOrientation));
 
     /*demo parameters*/
-    gMmwMssMCB.trackerCfg.staticCfg.sensorAzimuthTilt = gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.sensorOrientation.azimTilt * 3.1415926f / 180.;
+    gMmwMssMCB.trackerCfg.staticCfg.sensorAzimuthTilt   = gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.sensorOrientation.azimTilt * 3.1415926f / 180.;
     gMmwMssMCB.trackerCfg.staticCfg.sensorElevationTilt = gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.sensorOrientation.elevTilt * 3.1415926f / 180.;
-    gMmwMssMCB.trackerCfg.staticCfg.sensorHeight = gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.sensorPosition.z;
-
+    gMmwMssMCB.trackerCfg.staticCfg.sensorHeight        = gMmwMssMCB.trackerCfg.staticCfg.sceneryParams.sensorPosition.z;
 }
 
 void timerCallbackDefcfg(void *args)
 {
     static uint8_t defCfgLedState = 1;
-    if(defCfgLedState == 0)
+    if (defCfgLedState == 0)
     {
         defCfgLedState = 1;
-//        GPIO_pinWriteLow(gpioBaseAddrLed, pinNumLed);
+        GPIO_pinWriteLow(gpioBaseAddrLed, pinNumLed);
     }
     else
     {
-       defCfgLedState = 0;
-//       GPIO_pinWriteHigh(gpioBaseAddrLed, pinNumLed);
+        defCfgLedState = 0;
+        GPIO_pinWriteHigh(gpioBaseAddrLed, pinNumLed);
     }
-  
 }
 
 /**
@@ -123,8 +121,8 @@ void timerCallbackDefcfg(void *args)
  */
 void _MmwDemo_debugAssert(int32_t expression, const char *file, int32_t line)
 {
-    if (!expression) {
-        CLI_write ("Exception: %s, line %d.\r\n",file,line);
+    if (!expression)
+    {
+        CLI_write("Exception: %s, line %d.\r\n", file, line);
     }
 }
-
