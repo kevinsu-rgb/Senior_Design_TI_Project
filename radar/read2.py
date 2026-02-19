@@ -1,9 +1,18 @@
+from asyncio import QueueFull
+from nn import NeuralNetwork
+import torch
+from collections import deque
 from sys import byteorder
 import serial
 import threading
 import time
 import struct
+import numpy as np
+import queue
 
+q: queue.Queue = queue.Queue(1)
+
+MINIMUM_POINTS = 5
 
 # returns the baud rate the config is using
 def send_cfg(cfg_path: str, cli_baud_rate: int, cli_port: str, data_port: str):
@@ -19,7 +28,7 @@ def send_cfg(cfg_path: str, cli_baud_rate: int, cli_port: str, data_port: str):
     cli.reset_input_buffer()
 
     for line in cfg:
-        print("sending {}", line)
+        print(f"sending {line}")
 
         # send the data to the radar
         _ = cli.write((line).encode())
@@ -42,6 +51,7 @@ MAGIC_WORD = b"\x02\x01\x04\x03\x06\x05\x08\x07"
 
 
 def read_uart(_x: str, data_port: str, baud_rate: int):
+    global q
     print("starting read")
     ser = serial.Serial(data_port, baud_rate, timeout=1)
     buffer = bytearray()
@@ -84,22 +94,25 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
                 # tid posx	posy	posz	velx	vely	velz	accx	accy	accz
 
-                print(f"TVLS DETECTED {num_tlvs}")
-                for _ in range(num_tlvs):
+                #print(f"TVLS DETECTED {num_tlvs}")
+                frame = {
+                    "posx": 0,
+                    "tid": 0,
+                    "posy": 0,
+                    "posz": 0,
+                    "velx": 0,
+                    "vely": 0,
+                    "accx": 0,
+                    "accy": 0,
+                    "accz": 0,
+                    # later we will put the heatmap here
+                    "list_of_points": [],  # this is a list of dictionaries with pointx, pointy, pointz and snr
+                }
 
-                    frame = {
-                        "tid": 0,
-                        "posx": 0,
-                        "posy": 0,
-                        "posz": 0,
-                        "velx": 0,
-                        "vely": 0,
-                        "accx": 0,
-                        "accy": 0,
-                        "accz": 0,
-                        # later we will put the heatmap here
-                        "list_of_points": [],  # this is a list of dictionaries with pointx, pointy, pointz and snr
-                    }
+                found_points = False
+                found_target = False
+
+                for _ in range(num_tlvs):
 
                     tlv_header_raw = buffer[tlv_offset : tlv_offset + 8]
                     tlv_type = int.from_bytes(tlv_header_raw[0:4], byteorder="little")
@@ -108,7 +121,7 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                     tlv_data = buffer[tlv_offset + 8 : tlv_offset + 8 + tlv_length]
                     tlv_offset += tlv_length + 8
 
-                    print(f"TLV TYPE: {tlv_type} is {tlv_length} bytes long.")
+                    #print(f"TLV TYPE: {tlv_type} is {tlv_length} bytes long.")
 
                     MMWDEMO_OUTPUT_EXT_MSG_DETECTED_POINTS = 301
                     MMWDEMO_OUTPUT_EXT_MSG_TARGET_LIST = 308
@@ -124,30 +137,33 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                         noise_unit = struct.unpack("<f", tlv_data[12:16])[0]
                         num_detected_points = int.from_bytes(tlv_data[16:18], "little")
 
-                        # print(xyz_unit)
+                        if(num_detected_points < MINIMUM_POINTS):
+                            continue
 
-                        for _ in range(num_detected_points):
+                        found_points = True
+                        for j in range(num_detected_points):
+                            offset = 20 + (j * 10)
 
                             x = (
-                                int.from_bytes(tlv_data[20:22], "little", signed=True)
+                                int.from_bytes(tlv_data[offset:offset + 2], "little", signed=True)
                                 * xyz_unit
                             )
                             y = (
-                                int.from_bytes(tlv_data[22:24], "little", signed=True)
+                                int.from_bytes(tlv_data[offset +2 :offset + 4], "little", signed=True)
                                 * xyz_unit
                             )
                             z = (
-                                int.from_bytes(tlv_data[24:26], "little", signed=True)
+                                int.from_bytes(tlv_data[offset + 4:offset + 6], "little", signed=True)
                                 * xyz_unit
                             )
 
                             doppler = (
-                                int.from_bytes(tlv_data[26:28], "little", signed=True)
+                                int.from_bytes(tlv_data[offset + 6:offset + 8], "little", signed=True)
                                 * doppler_unit
                             )
 
                             snr = (
-                                int.from_bytes(tlv_data[28:29], "little", signed=True)
+                                int.from_bytes(tlv_data[offset + 8:offset + 9], "little", signed=True)
                                 * snr_unit
                             )
 
@@ -157,39 +173,90 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                             }
 
                             # print(f"x: {x}\n y: {y}\n z : {z}\n snr: {snr}")
-                            point = {
-                                f"pointx{i}": x,
-                                f"pointy{i}": y,
-                                f"pointz{i}": z,
-                                f"pointz{i}": doppler,
-                                f"pointz{i}": snr,
-                            }
+                            point = [x, y, z, doppler, snr]
+                            frame["list_of_points"].append(point)
 
                             i += 1
-
-                            frame["list_of_points"] += [point]
-
                             pass
                     elif tlv_type == MMWDEMO_OUTPUT_EXT_MSG_TARGET_LIST:
-                        frame["tid"] = int.from_bytes(tlv_data[0:4], "little")
-                        frame["posx"] = struct.unpack("<f", tlv_data[4:8])[0]
-                        frame["posy"] = struct.unpack("<f", tlv_data[8:12])[0]
-                        frame["posz"] = struct.unpack("<f", tlv_data[12:16])[0]
-                        frame["velx"] = struct.unpack("<f", tlv_data[16:20])[0]
-                        frame["vely"] = struct.unpack("<f", tlv_data[20:24])[0]
-                        frame["velz"] = struct.unpack("<f", tlv_data[24:28])[0]
-                        frame["accx"] = struct.unpack("<f", tlv_data[28:32])[0]
-                        frame["accy"] = struct.unpack("<f", tlv_data[32:36])[0]
-                        frame["accz"] = struct.unpack("<f", tlv_data[36:40])[0]
-                        pass
+                        found_target = True
+                        vals = struct.unpack("<I9f", tlv_data[:40])
+                        
+                        frame["tid"] = vals[0]
+                        frame["posx"], frame["posy"], frame["posz"] = vals[1], vals[2], vals[3]
+                        frame["velx"], frame["vely"], frame["velz"] = vals[4], vals[5], vals[6]
+                        frame["accx"], frame["accy"], frame["accz"] = vals[7], vals[8], vals[9]
                     elif tlv_type == MMWDEMO_OUTPUT_EXT_MSG_TARGET_INDEX:
                         pass
 
-                    if num_tlvs == 3:
-                        print(frame)
+                    if found_target and found_points:
+                        try:
+                            q.put(frame, block = False)
+                        except queue.Full:
+                            pass
 
                 buffer = buffer[total_packet_len:]
 
+def infer(X):
+    X = np.array(X, dtype=np.float32)
+    input_tensor = torch.from_numpy(X).unsqueeze(0).to("cpu")
+    with torch.no_grad():
+        probs = model(input_tensor) # Your model class ends with Softmax
+        top_prob, top_class = torch.max(probs, dim=1)
+    
+    label = top_class
+    return label
+
+def process(data_dict):
+    posy = data_dict.get('posy', 0.0)
+    base_features = [
+        data_dict.get('posz', 0.0), data_dict.get('velx', 0.0), 
+        data_dict.get('vely', 0.0), data_dict.get('velz', 0.0),
+        data_dict.get('accx', 0.0), data_dict.get('accy', 0.0), 
+        data_dict.get('accz', 0.0)
+    ]
+
+    list_of_points = data_dict.get('list_of_points', [])
+    raw_points = [[p[1] - posy, p[2], p[4]] for p in list_of_points]
+    
+    raw_points.sort(key=lambda x: x[1])
+
+    if len(raw_points) >= 5:
+        selected = raw_points[-3:] + raw_points[:2]
+    else:
+        selected = raw_points + [[0.0, 0.0, 0.0]] * (5 - len(raw_points))
+
+    if len(raw_points) > 0:
+        top_point = max(raw_points, key=lambda x: x[1])
+        #print(f"Detected Head Height: {top_point[1]:.2f} meters")
+
+    selected.sort(key=lambda x: x[0])
+
+    flat_points = [val for pt in selected for val in pt]
+    
+    return base_features + flat_points
+
+def predict():
+    global q
+    WINDOW_SIZE = 8
+    window_arr = np.zeros((WINDOW_SIZE, 22)) 
+    class_data = {0: 'STANDING', 1: 'SITTING', 2: 'LYING', 3: 'FALLING', 4: 'WALKING'}
+    class_predicted = 0
+    
+    while True:
+        raw_data = q.get()
+        processed_row = process(raw_data)
+        window_arr[:-1] = window_arr[1:]
+        window_arr[-1] = processed_row
+        X = window_arr.T.flatten()
+        result = infer(X)
+        if class_predicted == 3:
+            if result == 4:
+                class_predicted = result
+        else:
+            class_predicted = result
+
+        print(f"{class_data[int(class_predicted)]}")
 
 def main():
     cli_port = "/dev/ttyACM0"
@@ -200,11 +267,18 @@ def main():
 
     send_cfg("config.cfg", cli_baud_rate, cli_port, data_port)
     pt = threading.Thread(target=start_p, name="read uart", daemon=True)
+    ct = threading.Thread(target=predict, name="predict data", daemon=True)
 
     pt.start()
+    ct.start()
     while True:
         continue
 
+#device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cpu"
+model = NeuralNetwork(176, 5).to(device)
+model.load_state_dict(torch.load("model.pth", map_location=device))
+model.eval()
 
 if __name__ == "__main__":
     main()
