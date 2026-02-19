@@ -1,4 +1,5 @@
 from asyncio import QueueFull
+import onnxruntime as ort
 from nn import NeuralNetwork
 import torch
 from collections import deque
@@ -13,6 +14,7 @@ import queue
 q: queue.Queue = queue.Queue(1)
 
 MINIMUM_POINTS = 5
+
 
 # returns the baud rate the config is using
 def send_cfg(cfg_path: str, cli_baud_rate: int, cli_port: str, data_port: str):
@@ -94,7 +96,7 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
                 # tid posx	posy	posz	velx	vely	velz	accx	accy	accz
 
-                #print(f"TVLS DETECTED {num_tlvs}")
+                # print(f"TVLS DETECTED {num_tlvs}")
                 frame = {
                     "posx": 0,
                     "tid": 0,
@@ -121,7 +123,7 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                     tlv_data = buffer[tlv_offset + 8 : tlv_offset + 8 + tlv_length]
                     tlv_offset += tlv_length + 8
 
-                    #print(f"TLV TYPE: {tlv_type} is {tlv_length} bytes long.")
+                    # print(f"TLV TYPE: {tlv_type} is {tlv_length} bytes long.")
 
                     MMWDEMO_OUTPUT_EXT_MSG_DETECTED_POINTS = 301
                     MMWDEMO_OUTPUT_EXT_MSG_TARGET_LIST = 308
@@ -137,7 +139,7 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                         noise_unit = struct.unpack("<f", tlv_data[12:16])[0]
                         num_detected_points = int.from_bytes(tlv_data[16:18], "little")
 
-                        if(num_detected_points < MINIMUM_POINTS):
+                        if num_detected_points < MINIMUM_POINTS:
                             continue
 
                         found_points = True
@@ -145,25 +147,43 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                             offset = 20 + (j * 10)
 
                             x = (
-                                int.from_bytes(tlv_data[offset:offset + 2], "little", signed=True)
+                                int.from_bytes(
+                                    tlv_data[offset : offset + 2], "little", signed=True
+                                )
                                 * xyz_unit
                             )
                             y = (
-                                int.from_bytes(tlv_data[offset +2 :offset + 4], "little", signed=True)
+                                int.from_bytes(
+                                    tlv_data[offset + 2 : offset + 4],
+                                    "little",
+                                    signed=True,
+                                )
                                 * xyz_unit
                             )
                             z = (
-                                int.from_bytes(tlv_data[offset + 4:offset + 6], "little", signed=True)
+                                int.from_bytes(
+                                    tlv_data[offset + 4 : offset + 6],
+                                    "little",
+                                    signed=True,
+                                )
                                 * xyz_unit
                             )
 
                             doppler = (
-                                int.from_bytes(tlv_data[offset + 6:offset + 8], "little", signed=True)
+                                int.from_bytes(
+                                    tlv_data[offset + 6 : offset + 8],
+                                    "little",
+                                    signed=True,
+                                )
                                 * doppler_unit
                             )
 
                             snr = (
-                                int.from_bytes(tlv_data[offset + 8:offset + 9], "little", signed=True)
+                                int.from_bytes(
+                                    tlv_data[offset + 8 : offset + 9],
+                                    "little",
+                                    signed=True,
+                                )
                                 * snr_unit
                             )
 
@@ -181,44 +201,56 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                     elif tlv_type == MMWDEMO_OUTPUT_EXT_MSG_TARGET_LIST:
                         found_target = True
                         vals = struct.unpack("<I9f", tlv_data[:40])
-                        
+
                         frame["tid"] = vals[0]
-                        frame["posx"], frame["posy"], frame["posz"] = vals[1], vals[2], vals[3]
-                        frame["velx"], frame["vely"], frame["velz"] = vals[4], vals[5], vals[6]
-                        frame["accx"], frame["accy"], frame["accz"] = vals[7], vals[8], vals[9]
+                        frame["posx"], frame["posy"], frame["posz"] = (
+                            vals[1],
+                            vals[2],
+                            vals[3],
+                        )
+                        frame["velx"], frame["vely"], frame["velz"] = (
+                            vals[4],
+                            vals[5],
+                            vals[6],
+                        )
+                        frame["accx"], frame["accy"], frame["accz"] = (
+                            vals[7],
+                            vals[8],
+                            vals[9],
+                        )
                     elif tlv_type == MMWDEMO_OUTPUT_EXT_MSG_TARGET_INDEX:
                         pass
 
                     if found_target and found_points:
                         try:
-                            q.put(frame, block = False)
+                            q.put(frame, block=False)
                         except queue.Full:
                             pass
 
                 buffer = buffer[total_packet_len:]
 
+
 def infer(X):
-    X = np.array(X, dtype=np.float32)
-    input_tensor = torch.from_numpy(X).unsqueeze(0).to("cpu")
-    with torch.no_grad():
-        probs = model(input_tensor) # Your model class ends with Softmax
-        top_prob, top_class = torch.max(probs, dim=1)
-    
-    label = top_class
-    return label
+    input_tensor = np.array(X, dtype=np.float32).reshape(1, -1)
+    outputs = ort_session.run(None, {"input": input_tensor})
+    return np.argmax(outputs[0], axis=1)[0]
+
 
 def process(data_dict):
-    posy = data_dict.get('posy', 0.0)
+    posy = data_dict.get("posy", 0.0)
     base_features = [
-        data_dict.get('posz', 0.0), data_dict.get('velx', 0.0), 
-        data_dict.get('vely', 0.0), data_dict.get('velz', 0.0),
-        data_dict.get('accx', 0.0), data_dict.get('accy', 0.0), 
-        data_dict.get('accz', 0.0)
+        data_dict.get("posz", 0.0),
+        data_dict.get("velx", 0.0),
+        data_dict.get("vely", 0.0),
+        data_dict.get("velz", 0.0),
+        data_dict.get("accx", 0.0),
+        data_dict.get("accy", 0.0),
+        data_dict.get("accz", 0.0),
     ]
 
-    list_of_points = data_dict.get('list_of_points', [])
+    list_of_points = data_dict.get("list_of_points", [])
     raw_points = [[p[1] - posy, p[2], p[4]] for p in list_of_points]
-    
+
     raw_points.sort(key=lambda x: x[1])
 
     if len(raw_points) >= 5:
@@ -228,27 +260,58 @@ def process(data_dict):
 
     if len(raw_points) > 0:
         top_point = max(raw_points, key=lambda x: x[1])
-        #print(f"Detected Head Height: {top_point[1]:.2f} meters")
+        # print(f"Detected Head Height: {top_point[1]:.2f} meters")
 
     selected.sort(key=lambda x: x[0])
 
     flat_points = [val for pt in selected for val in pt]
-    
+
     return base_features + flat_points
+
 
 def predict():
     global q
     WINDOW_SIZE = 8
-    window_arr = np.zeros((WINDOW_SIZE, 22)) 
-    class_data = {0: 'STANDING', 1: 'SITTING', 2: 'LYING', 3: 'FALLING', 4: 'WALKING'}
+    FEATURE_COUNT = 22
+    window = deque(maxlen=WINDOW_SIZE)
+
+    for _ in range(WINDOW_SIZE):
+        window.append(np.zeros(FEATURE_COUNT))
+
+    class_data = {0: "STANDING", 1: "SITTING", 2: "LYING", 3: "FALLING", 4: "WALKING"}
     class_predicted = 0
-    
+
+    while True:
+        raw_data = q.get()
+        processed_row = process(raw_data)
+        window.append(processed_row)
+
+        X = np.array(window).T.flatten().astype(np.float32)
+
+        result = infer(X)
+
+        if class_predicted == 3:
+            if result == 4:
+                class_predicted = result
+        else:
+            class_predicted = result
+
+        print(f"Status: {class_data[int(class_predicted)]}")
+
+
+def predict():
+    global q
+    WINDOW_SIZE = 8
+    window_arr = np.zeros((WINDOW_SIZE, 22))
+    class_data = {0: "STANDING", 1: "SITTING", 2: "LYING", 3: "FALLING", 4: "WALKING"}
+    class_predicted = 0
+
     while True:
         raw_data = q.get()
         processed_row = process(raw_data)
         window_arr[:-1] = window_arr[1:]
         window_arr[-1] = processed_row
-        X = window_arr.T.flatten()
+        X = window_arr[::-1].T.flatten()
         result = infer(X)
         if class_predicted == 3:
             if result == 4:
@@ -257,6 +320,7 @@ def predict():
             class_predicted = result
 
         print(f"{class_data[int(class_predicted)]}")
+
 
 def main():
     cli_port = "/dev/ttyACM0"
@@ -271,14 +335,33 @@ def main():
 
     pt.start()
     ct.start()
-    while True:
-        continue
 
-#device = "cuda" if torch.cuda.is_available() else "cpu"
-device = "cpu"
-model = NeuralNetwork(176, 5).to(device)
-model.load_state_dict(torch.load("model.pth", map_location=device))
-model.eval()
+    pt.join()
+    ct.join()
+
+
+# device = "cuda" if torch.cuda.is_available() else "cpu"
+# device = "cpu"
+# model = NeuralNetwork(176, 5).to(device)
+# model.load_state_dict(torch.load("model.pth", map_location=device))
+# model.eval()
+#
+# dummy_input = torch.randn(1, 176)
+#
+## 3. Export to ONNX
+# torch.onnx.export(
+#    model,
+#    dummy_input,
+#    "model.onnx",
+#    export_params=True,
+#    opset_version=12,
+#    do_constant_folding=True,
+#    input_names=["input"],
+#    output_names=["output"],
+# )
+# print("Model exported to model.onnx")
+
+ort_session = ort.InferenceSession("model.onnx")
 
 if __name__ == "__main__":
     main()
