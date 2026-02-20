@@ -24,4 +24,9 @@
 - Worked on collecting range doppler data. Default config wasn't working. Messaged Pedrhom for help. Was able to log range doppler data, 2/05. (3 hours.)
 - Worked on processing the range doppler data into 2D array, and visualizing it. Troubleshooted # of range bins and # of doppler bins. Worked on UART reader with Jaiden to switch from azimuth to doppler, 2/07. (4 hours.)
 - Worked with Pedrhom to optimize cfg settings, because doppler visualization wasn't very clear. (2 hours.)
-
+### 2/09->2/16: 13 hours.
+- Met up with TI to discuss project status. Determined SPI would be a good option. (1 hour.)
+- Worked on getting SPI data capture to work. (1 hour.)
+- Continued working on SPI data capture, was unsucessful and decided to move back to UART data collection. (4 hours.)
+- Pivoted to collecting point cloud + heatmap data. Added point cloud functionality to our UART reader, read.py. (4 hours.)
+- Worked on adding tracker information to read.py, which contains accel, vel, and pos. (3 hours.)
