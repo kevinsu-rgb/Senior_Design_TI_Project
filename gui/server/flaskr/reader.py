@@ -313,7 +313,7 @@ def predict():
             class_predicted = result
 
         status_queue.put(class_data[int(class_predicted)])
-        print(f"Status: {class_data[int(class_predicted)]}")
+        # print(f"Status: {class_data[int(class_predicted)]}")
 
 
 def main():

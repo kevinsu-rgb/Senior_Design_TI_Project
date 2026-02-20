@@ -50,6 +50,7 @@ def background_thread():
                 }
             },
         )
+        socketio.sleep(0)
 
 
 @socketio.on("connect")
