@@ -65,6 +65,7 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
             continue
 
         data = ser.read(bytecount)
+        # print(data)
         buffer.extend(data)
 
         magic_index = buffer.find(MAGIC_WORD)
@@ -96,7 +97,6 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
                 # tid posx	posy	posz	velx	vely	velz	accx	accy	accz
 
-                # print(f"TVLS DETECTED {num_tlvs}")
                 frame = {
                     "posx": 0,
                     "tid": 0,
@@ -114,10 +114,13 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                 found_points = False
                 found_target = False
 
+                # print(f"num tlvs is {num_tlvs}")
+
                 for _ in range(num_tlvs):
 
                     tlv_header_raw = buffer[tlv_offset : tlv_offset + 8]
                     tlv_type = int.from_bytes(tlv_header_raw[0:4], byteorder="little")
+                    # print(f"TLV TYPE {tlv_type}")
                     tlv_length = int.from_bytes(tlv_header_raw[4:8], byteorder="little")
 
                     tlv_data = buffer[tlv_offset + 8 : tlv_offset + 8 + tlv_length]
@@ -224,6 +227,7 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                     if found_target and found_points:
                         try:
                             q.put(frame, block=False)
+                            # print("put in queue")
                         except queue.Full:
                             pass
 
@@ -297,29 +301,6 @@ def predict():
             class_predicted = result
 
         print(f"Status: {class_data[int(class_predicted)]}")
-
-
-def predict():
-    global q
-    WINDOW_SIZE = 8
-    window_arr = np.zeros((WINDOW_SIZE, 22))
-    class_data = {0: "STANDING", 1: "SITTING", 2: "LYING", 3: "FALLING", 4: "WALKING"}
-    class_predicted = 0
-
-    while True:
-        raw_data = q.get()
-        processed_row = process(raw_data)
-        window_arr[:-1] = window_arr[1:]
-        window_arr[-1] = processed_row
-        X = window_arr[::-1].T.flatten()
-        result = infer(X)
-        if class_predicted == 3:
-            if result == 4:
-                class_predicted = result
-        else:
-            class_predicted = result
-
-        print(f"{class_data[int(class_predicted)]}")
 
 
 def main():
