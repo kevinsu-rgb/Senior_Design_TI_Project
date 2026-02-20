@@ -18,5 +18,10 @@
 - Got sick with food poisoning on 1/30 from Panda Express... rested 1/30 and 1/31
 - Worked on collecting heatmap data and visualizing this data on 2/01. Created json to csv converter that normalized data and collected sitting and standing range azimuth data (5 hours.)
 - Continued testing model on range azimuth data on 2/02. (3 hours.)
-
+### 2/02->2/09: 13 hours.
+- Met with TI to discuss current state of project. Determined range doppler was better than azimuth on 2/04. (1 hour.)
+- Met up with Team after the meeting at CpE lab. Worked on getting range doppler working on diff demo, 2/04. (3 hours.)
+- Worked on collecting range doppler data. Default config wasn't working. Messaged Pedrhom for help. Was able to log range doppler data, 2/05. (3 hours.)
+- Worked on processing the range doppler data into 2D array, and visualizing it. Troubleshooted # of range bins and # of doppler bins. Worked on UART reader with Jaiden to switch from azimuth to doppler, 2/07. (4 hours.)
+- Worked with Pedrhom to optimize cfg settings, because doppler visualization wasn't very clear. (2 hours.)
 
