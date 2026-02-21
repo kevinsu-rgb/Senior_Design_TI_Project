@@ -104,6 +104,7 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                     "posz": 0,
                     "velx": 0,
                     "vely": 0,
+                    "velz": 0,
                     "accx": 0,
                     "accy": 0,
                     "accz": 0,
@@ -223,13 +224,15 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                         )
                     elif tlv_type == MMWDEMO_OUTPUT_EXT_MSG_TARGET_INDEX:
                         pass
+                    elif tlv_type == 1031:
+                        print("1031 found")
 
-                    if found_target and found_points:
-                        try:
-                            q.put(frame, block=False)
-                            # print("put in queue")
-                        except queue.Full:
-                            pass
+                if found_target and found_points:
+                    try:
+                        q.put(frame, block=False)
+                        # print("put in queue")
+                    except queue.Full:
+                        pass
 
                 buffer = buffer[total_packet_len:]
 
@@ -254,13 +257,18 @@ def process(data_dict):
 
     list_of_points = data_dict.get("list_of_points", [])
     raw_points = [[p[1] - posy, p[2], p[4]] for p in list_of_points]
+    raw_points = [p for p in raw_points if -4 <= p[0] <= 5 and -4 <= p[1] <= 3]
 
     raw_points.sort(key=lambda x: x[1])
 
-    if len(raw_points) >= 5:
-        selected = raw_points[-3:] + raw_points[:2]
-    else:
-        selected = raw_points + [[0.0, 0.0, 0.0]] * (5 - len(raw_points))
+    # if len(raw_points) >= 5:
+    #    selected = raw_points[-3:] + raw_points[:2]
+    # else:
+    #     print("ELSE")
+    #    selected = raw_points + [[0.0, 0.0, 0.0]] * (5 - len(raw_points))
+    selected = raw_points[-5:]
+    if len(selected) < 5:
+        selected = selected + [[0.0, 0.0, 0.0]] * (5 - len(selected))
 
     if len(raw_points) > 0:
         top_point = max(raw_points, key=lambda x: x[1])
