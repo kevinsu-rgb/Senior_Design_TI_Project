@@ -44,9 +44,9 @@ export default function RadarProvider({ children }) {
   }, [ws]);
 
   useEffect(() => {
-    if (!isConnected) return;
+    if (!ws || !isConnected) return;
 
-    ws.on("radar_status_update", (data) => {
+    const onRadarStatusUpdate = (data) => {
       const updates = data.updates;
 
       setRadarList((prev) =>
@@ -54,12 +54,14 @@ export default function RadarProvider({ children }) {
           radar.radar_id === updates.radar_id ? { ...radar, ...updates } : radar
         )
       );
-    });
+    };
+
+    ws.on("radar_status_update", onRadarStatusUpdate);
 
     return () => {
-      ws.off("radar_status_update");
+      ws.off("radar_status_update", onRadarStatusUpdate);
     };
-  }, [ws, isConnected, radarList]);
+  }, [ws, isConnected]);
 
   return (
     <RadarContext.Provider value={{ radarList }}>

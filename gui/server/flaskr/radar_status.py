@@ -50,7 +50,8 @@ def background_thread():
                 }
             },
         )
-        socketio.sleep(0)
+        # Emit at a stable cadence so clients do not get flooded.
+        socketio.sleep(1)
 
 
 @socketio.on("connect")
