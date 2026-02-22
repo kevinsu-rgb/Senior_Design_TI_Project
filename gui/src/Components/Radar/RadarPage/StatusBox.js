@@ -1,29 +1,17 @@
 import { useGetRadarById } from "../../../hooks/useRadar";
+import { getStatusTheme } from "../../../statusTheme";
 
 export default function StatusBox({ radarId }) {
     const radar = useGetRadarById(radarId);
 
     if (!radar) return null;
 
-    const status = (radar.status || "").toLowerCase();
-
-    const statusConfig = {
-        falling: { border: "border-red-600", text: "text-red-500" },
-        standing: { border: "border-green-600", text: "text-green-500" },
-        sitting: { border: "border-blue-600", text: "text-blue-400" },
-        walking: { border: "border-green-600", text: "text-green-400" },
-    };
-
-    const currentStyle = statusConfig[status] || {
-        border: "border-gray-600",
-        text: "text-yellow-400"
-    };
-
-    const { border: boxBorderClass, text: statusTextClass } = currentStyle;
+    const theme = getStatusTheme(radar.status);
+    const statusLabel = theme.label;
 
     return (
         <div className="h-full overflow-hidden bg-bg2 rounded-lg p-8 ">
-            <div className={`border-4 ${boxBorderClass} bg-bg3 rounded-lg p-6`}>
+            <div className={`border-4 ${theme.cardBorder} ${theme.cardBg} rounded-lg p-6`}>
                 <div className="flex items-center justify-between ">
                     <h2 className="text-5xl font-bold text-white">{radar.name}</h2>
                 </div>
@@ -35,8 +23,8 @@ export default function StatusBox({ radarId }) {
                 <div className="flex items-center gap-4">
                     <p className="text-white text-2xl">
                         Status:{" "}
-                        <span className={`${statusTextClass} font-bold`}>
-                            {radar.status}
+                        <span className={`${theme.statusText} font-bold`}>
+                            {statusLabel}
                         </span>
                     </p>
                 </div>
