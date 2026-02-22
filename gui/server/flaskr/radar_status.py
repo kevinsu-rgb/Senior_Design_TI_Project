@@ -3,7 +3,7 @@ from pathlib import Path
 import time
 from flask_socketio import emit
 
-from . import reader
+from . import bt_status
 from . import socketio, status_queue
 
 background_task_started = False
@@ -60,13 +60,25 @@ def test_connect():
 
     if not background_task_started:
         socketio.start_background_task(background_thread)
+        status_source = os.getenv("RADAR_STATUS_SOURCE", "local").lower().strip()
 
-        radar_port = os.getenv("RADAR_PORT", "/dev/ttyACM0")
+        if status_source == "bluetooth":
+            bt_com_port = os.getenv("BT_STATUS_COM_PORT", "COM7")
+            bt_baud = int(os.getenv("BT_STATUS_BAUD", "115200"))
+            socketio.start_background_task(
+                bt_status.read_statuses_from_serial,
+                bt_com_port,
+                bt_baud,
+                status_queue,
+            )
+        else:
+            from . import reader
 
-        path = Path(__file__).resolve().parent / "configs" / "config.cfg"
-        reader.send_cfg(path, 115200, radar_port, radar_port)
-        socketio.start_background_task(reader.read_uart, "", radar_port, 1250000)
-        socketio.start_background_task(reader.predict)
+            radar_port = os.getenv("RADAR_PORT", "/dev/ttyACM0")
+            path = Path(__file__).resolve().parent / "configs" / "config.cfg"
+            reader.send_cfg(path, 115200, radar_port, radar_port)
+            socketio.start_background_task(reader.read_uart, "", radar_port, 1250000)
+            socketio.start_background_task(reader.predict)
         background_task_started = True
 
 
