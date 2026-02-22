@@ -1,9 +1,5 @@
-from asyncio import QueueFull
 import onnxruntime as ort
-from nn import NeuralNetwork
-import torch
 from collections import deque
-from sys import byteorder
 import serial
 import threading
 import time
@@ -281,7 +277,7 @@ def process(data_dict):
     return base_features + flat_points
 
 
-def predict():
+def predict(status_out_queue: queue.Queue | None = None):
     global q
     WINDOW_SIZE = 8
     FEATURE_COUNT = 22
@@ -308,7 +304,13 @@ def predict():
         else:
             class_predicted = result
 
-        print(f"Status: {class_data[int(class_predicted)]}")
+        status_label = class_data[int(class_predicted)]
+        print(f"Status: {status_label}")
+        if status_out_queue is not None:
+            try:
+                status_out_queue.put(status_label, block=False)
+            except queue.Full:
+                pass
 
 
 def main():

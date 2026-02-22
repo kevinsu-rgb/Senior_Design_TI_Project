@@ -1,9 +1,6 @@
-from asyncio import QueueFull
 from pathlib import Path
 import onnxruntime as ort
-import torch
 from collections import deque
-from sys import byteorder
 import serial
 import threading
 import time
@@ -12,12 +9,9 @@ import numpy as np
 import queue
 import os
 
-from flaskr.nn import NeuralNetwork
-
 q: queue.Queue = queue.Queue(1)
 
 from . import status_queue
-from .nn import NeuralNetwork
 
 MINIMUM_POINTS = 5
 
