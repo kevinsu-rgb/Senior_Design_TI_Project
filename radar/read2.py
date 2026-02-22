@@ -1,7 +1,5 @@
-from asyncio import QueueFull
 import onnxruntime as ort
 from collections import deque
-from sys import byteorder
 import serial
 import threading
 import time
