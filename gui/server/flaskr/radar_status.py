@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import threading
 import time
 from flask_socketio import emit
 
@@ -7,48 +8,83 @@ from . import bt_status
 from . import socketio, status_queue
 
 background_task_started = False
+state_lock = threading.Lock()
+start_time = time.time()
+latest_live_status = "unknown"
+display_status = "unknown"
+previous_logged_status = "unknown"
+fault_latched = False
+activity_log = []
+
+
+def _now_hms():
+    return time.strftime("%H:%M:%S", time.gmtime())
+
+
+def _uptime_string():
+    uptime = int(time.time() - start_time)
+    return f"{uptime//86400}d {(uptime%86400)//3600}h {(uptime%3600)//60}m {uptime%60}s"
+
+
+def _build_update_payload():
+    with state_lock:
+        return {
+            "radar_id": 1,
+            "is_connected": True,
+            "status": display_status,
+            "people_count": 1,
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "activity_log": activity_log[-5:],
+            "uptime": _uptime_string(),
+            "fault_latched": fault_latched,
+        }
+
+
+def clear_fault(radar_id: int):
+    global fault_latched, display_status, previous_logged_status
+
+    if radar_id != 1:
+        return {"ok": False, "message": "Radar not found"}, 404
+
+    with state_lock:
+        fault_latched = False
+        display_status = latest_live_status
+        previous_logged_status = display_status
+        activity_log.append({"time": _now_hms(), "event": "Fault cleared"})
+
+    socketio.emit("radar_status_update", {"updates": _build_update_payload()})
+    return {"ok": True, "fault_latched": False}, 200
 
 
 def background_thread():
     global status_queue
+    global latest_live_status, display_status, previous_logged_status, fault_latched
 
-    uptime = 0
-    activity_log = []
-    prev_status = "Unknown"
-    start_time = time.time()
-    status = "Unknown"
-
-    fallStarted = True
-    i = 0
     while True:
+        newest_status = None
         while not status_queue.empty():
-            status = status_queue.get_nowait().lower()
+            newest_status = status_queue.get_nowait().lower()
 
-        people_count = 1
-        if status != prev_status:
-            activity_log.append(
-                {
-                    "time": time.strftime("%H:%M:%S", time.gmtime()),
-                    "event": f"Status changed: {prev_status} → {status}",
-                }
-            )
-            prev_status = status
+        if newest_status is not None:
+            with state_lock:
+                latest_live_status = newest_status
+                if not fault_latched:
+                    if newest_status != previous_logged_status:
+                        activity_log.append(
+                            {
+                                "time": _now_hms(),
+                                "event": f"Status changed: {previous_logged_status} → {newest_status}",
+                            }
+                        )
+                        previous_logged_status = newest_status
 
-        uptime = int(time.time() - start_time)
+                    display_status = newest_status
+                    if newest_status == "falling":
+                        fault_latched = True
 
         socketio.emit(
             "radar_status_update",
-            {
-                "updates": {
-                    "radar_id": 1,
-                    "is_connected": True,
-                    "status": status,
-                    "people_count": people_count,
-                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                    "activity_log": activity_log[-5:],
-                    "uptime": f"{uptime//86400}d {(uptime%86400)//3600}h {(uptime%3600)//60}m {uptime%60}s",
-                }
-            },
+            {"updates": _build_update_payload()},
         )
         # Emit at a stable cadence so clients do not get flooded.
         socketio.sleep(1)
@@ -64,7 +100,7 @@ def test_connect():
         status_source = os.getenv("RADAR_STATUS_SOURCE", "local").lower().strip()
 
         if status_source == "bluetooth":
-            bt_com_port = os.getenv("BT_STATUS_COM_PORT", "COM7")
+            bt_com_port = os.getenv("BT_STATUS_COM_PORT", "COM8")
             bt_baud = int(os.getenv("BT_STATUS_BAUD", "115200"))
             socketio.start_background_task(
                 bt_status.read_statuses_from_serial,

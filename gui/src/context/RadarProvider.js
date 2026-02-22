@@ -63,8 +63,21 @@ export default function RadarProvider({ children }) {
     };
   }, [ws, isConnected]);
 
+  const clearRadarFault = async (radarId) => {
+    try {
+      const response = await fetch(`/api/radar/${radarId}/clear-fault`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to clear fault for radar ${radarId}`);
+      }
+    } catch (err) {
+      console.error("Error clearing radar fault: ", err);
+    }
+  };
+
   return (
-    <RadarContext.Provider value={{ radarList }}>
+    <RadarContext.Provider value={{ radarList, clearRadarFault }}>
       {children}
     </RadarContext.Provider>
   );

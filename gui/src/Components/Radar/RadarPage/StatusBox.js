@@ -27,6 +27,11 @@ export default function StatusBox({ radarId }) {
                             {statusLabel}
                         </span>
                     </p>
+                    {radar.fault_latched && (
+                        <span className="px-3 py-1 rounded-md bg-red-700 text-white font-semibold text-sm">
+                            Fault latched
+                        </span>
+                    )}
                 </div>
             </div>
 
