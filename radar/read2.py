@@ -1,7 +1,5 @@
 from asyncio import QueueFull
 import onnxruntime as ort
-from nn import NeuralNetwork
-import torch
 from collections import deque
 from sys import byteorder
 import serial
