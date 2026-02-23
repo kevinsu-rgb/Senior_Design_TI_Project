@@ -5,6 +5,7 @@
 */.pnp
 .pnp.js
 */venv
+venv/
 .env
 
 # testing
@@ -28,3 +29,8 @@ server/flaskr/__pycache__
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+radar/doppler/
+
+.idea/
+.vscode/

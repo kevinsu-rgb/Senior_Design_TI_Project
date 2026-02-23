@@ -12,3 +12,13 @@
 - Read UART and save CSVs from heatmap data (2 hours.)
 - Spend time collecting sample data (4 hours.)
 - Connect ML model with UART reader (5 hours.)
+### 2/07->2/14 Total 41 hours:
+- Setup the UART reader with the doppler heatmap instead of Azimuth (3 hours.)
+- Collect some testing data (1 hour.)
+- Change the NN to use Range-Doppler heatmaps instead of Azimuth (3 hours.)
+- Edit configuration to increase FPS and increase range resolution (2 hours.)
+### 2/14->2/21 Total 52 hours:
+- Modify Pedhrom's (from TI) to handle Point Cloud data in our model (3 hours.)
+- Edit Python script to process data the same as model (5 hours.)
+- Connect read2 script to GUI (3 hours.)
+

@@ -1,4 +1,3 @@
-from pathlib import Path
 import onnxruntime as ort
 from collections import deque
 import serial
@@ -7,19 +6,14 @@ import time
 import struct
 import numpy as np
 import queue
-import os
 
 q: queue.Queue = queue.Queue(1)
-
-from . import status_queue
 
 MINIMUM_POINTS = 5
 
 
 # returns the baud rate the config is using
 def send_cfg(cfg_path: str, cli_baud_rate: int, cli_port: str, data_port: str):
-
-    print(f"Current Working Directory: {os.getcwd()}")
     cli = serial.Serial(cli_port, cli_baud_rate, timeout=1)
 
     # Read the config file
@@ -106,6 +100,7 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                     "posz": 0,
                     "velx": 0,
                     "vely": 0,
+                    "velz": 0,
                     "accx": 0,
                     "accy": 0,
                     "accz": 0,
@@ -225,18 +220,20 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                         )
                     elif tlv_type == MMWDEMO_OUTPUT_EXT_MSG_TARGET_INDEX:
                         pass
+                    elif tlv_type == 1031:
+                        print("1031 found")
 
-                    if found_target and found_points:
-                        try:
-                            q.put(frame, block=False)
-                            # print("put in queue")
-                        except queue.Full:
-                            pass
+                if found_target and found_points:
+                    try:
+                        q.put(frame, block=False)
+                        # print("put in queue")
+                    except queue.Full:
+                        pass
 
                 buffer = buffer[total_packet_len:]
 
 
-def infer(X, ort_session):
+def infer(X):
     input_tensor = np.array(X, dtype=np.float32).reshape(1, -1)
     outputs = ort_session.run(None, {"input": input_tensor})
     return np.argmax(outputs[0], axis=1)[0]
@@ -256,13 +253,18 @@ def process(data_dict):
 
     list_of_points = data_dict.get("list_of_points", [])
     raw_points = [[p[1] - posy, p[2], p[4]] for p in list_of_points]
+    raw_points = [p for p in raw_points if -4 <= p[0] <= 5 and -4 <= p[1] <= 3]
 
     raw_points.sort(key=lambda x: x[1])
 
-    if len(raw_points) >= 5:
-        selected = raw_points[-3:] + raw_points[:2]
-    else:
-        selected = raw_points + [[0.0, 0.0, 0.0]] * (5 - len(raw_points))
+    # if len(raw_points) >= 5:
+    #    selected = raw_points[-3:] + raw_points[:2]
+    # else:
+    #     print("ELSE")
+    #    selected = raw_points + [[0.0, 0.0, 0.0]] * (5 - len(raw_points))
+    selected = raw_points[-5:]
+    if len(selected) < 5:
+        selected = selected + [[0.0, 0.0, 0.0]] * (5 - len(selected))
 
     if len(raw_points) > 0:
         top_point = max(raw_points, key=lambda x: x[1])
@@ -275,18 +277,14 @@ def process(data_dict):
     return base_features + flat_points
 
 
-def predict():
-    global q  # this is the queue which gets the point clouds
-    global status_queue  # this is the queue to send to flask
+def predict(status_out_queue: queue.Queue | None = None):
+    global q
     WINDOW_SIZE = 8
     FEATURE_COUNT = 22
     window = deque(maxlen=WINDOW_SIZE)
 
     for _ in range(WINDOW_SIZE):
         window.append(np.zeros(FEATURE_COUNT))
-
-    path = Path(__file__).resolve().parent / "models" / "model.onnx"
-    ort_session = ort.InferenceSession(path)
 
     class_data = {0: "STANDING", 1: "SITTING", 2: "LYING", 3: "FALLING", 4: "WALKING"}
     class_predicted = 0
@@ -298,7 +296,7 @@ def predict():
 
         X = np.array(window).T.flatten().astype(np.float32)
 
-        result = infer(X, ort_session)
+        result = infer(X)
 
         if class_predicted == 3:
             if result == 4:
@@ -306,8 +304,13 @@ def predict():
         else:
             class_predicted = result
 
-        status_queue.put(class_data[int(class_predicted)])
-        # print(f"Status: {class_data[int(class_predicted)]}")
+        status_label = class_data[int(class_predicted)]
+        print(f"Status: {status_label}")
+        if status_out_queue is not None:
+            try:
+                status_out_queue.put(status_label, block=False)
+            except queue.Full:
+                pass
 
 
 def main():
@@ -348,3 +351,8 @@ def main():
 #    output_names=["output"],
 # )
 # print("Model exported to model.onnx")
+
+ort_session = ort.InferenceSession("model.onnx")
+
+if __name__ == "__main__":
+    main()
