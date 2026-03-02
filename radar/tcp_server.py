@@ -16,7 +16,8 @@ import socket
 import threading
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
+
 
 DISCOVERY_MAGIC_Q = b"RADAR_DISCOVERY_V1?"
 DISCOVERY_MAGIC_A = b"RADAR_DISCOVERY_V1!"
@@ -95,7 +96,7 @@ class RadarTcpServer:
         while not self._stop.is_set():
             # always reply unless stop
             try:
-             # load data, and source IP/port of the reply
+                # load data, and source IP/port of the reply
                 data, (src_ip, src_port) = sock.recvfrom(2048)
             except socket.timeout:
                 continue
@@ -228,6 +229,16 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--tcp-host", default="0.0.0.0", help="Bind address for TCP server")
     p.add_argument("--tcp-port", type=int, default=DEFAULT_TCP_PORT)
     p.add_argument("--discovery-port", type=int, default=DEFAULT_DISCOVERY_PORT)
+    
+    p.add_argument("--cfg-path", default="config.cfg", help="Radar config file path passed to send_cfg")
+    p.add_argument("--cli-port", default="/dev/ttyACM0", help="Radar CLI UART port")
+    p.add_argument("--data-port", default="/dev/ttyACM0", help="Radar data UART port")
+    p.add_argument("--cli-baud", type=int, default=115200, help="Radar CLI baud rate")
+    p.add_argument("--data-baud", type=int, default=1250000, help="Radar data baud rate")
+
+    # Keep the old demo option available for quick network testing
+    p.add_argument("--demo", action="store_true", help="Publish fake classification events once per second")
+
     return p.parse_args()
 
 
@@ -246,22 +257,72 @@ def main() -> None:
     srv = RadarTcpServer(cfg)
     srv.start()
 
-    # Demo loop: emits a fake event every second so you can test the pipeline
-    try:
-        seq = 0
-        while True:
-            srv.publish_event(
-                {
-                    "seq": seq,
-                    "class": "NONE" if (seq % 10) else "FALL",
+    status_q: queue.Queue[str] = queue.Queue()
+
+    if args.demo:
+        print("Running in demo mode. Publishing fake events every second.")
+        # Demo loop: emits a fake event every second so you can test the pipeline
+        try:
+            seq = 0
+            while True:
+                srv.publish_event(
+                    {
+                        "type": "demo",
+                        "class": "NONE" if (seq % 2) else "FALL",
+                    }
+                )
+                seq += 1
+                time.sleep(1.0)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            srv.stop()
+    else:
+        print("Starting radar reader thread.")
+        import read2  # local import to avoid dependency if just running demo
+
+        read2.send_cfg(args.cfg_path, args.cli_baud, args.cli_port, args.data_port)
+
+        uart_t = threading.Thread(
+            target=read2.read_uart, 
+            daemon=True,
+            args=("", args.data_port, args.data_baud),
+            name="radar-read-uart"
+        )
+        pred_t = threading.Thread(
+            target=read2.predict, 
+            daemon=True, 
+            name="radar-predict", 
+            kwargs={"status_out_queue": status_q}
+        )
+
+        uart_t.start()
+        pred_t.start()
+
+        
+        print("Starting event publisher loop.")
+        try:
+            while True:
+                try:
+                    status = status_q.get(timeout=0.5)
+                except queue.Empty:
+                    print("empty")
+                    event = {
+                        "type": "status",
+                        "class": "NOT_CLASSIFIED",
+                    }
+                    srv.publish_event(event)
+                    continue
+                event = {
+                    "type": "status",
+                    "class": status,
                 }
-            )
-            seq += 1
-            time.sleep(1.0)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        srv.stop()
+                srv.publish_event(event)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            srv.stop()
+    
 
 
 if __name__ == "__main__":
