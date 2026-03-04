@@ -267,8 +267,8 @@ def main() -> None:
             while True:
                 srv.publish_event(
                     {
-                        "type": "demo",
-                        "class": "NONE" if (seq % 2) else "FALL",
+                        "type": "status",
+                        "status": "STANDING" if (seq % 2) else "STANDING",
                     }
                 )
                 seq += 1
@@ -309,13 +309,13 @@ def main() -> None:
                     print("empty")
                     event = {
                         "type": "status",
-                        "class": "NOT_CLASSIFIED",
+                        "status": "UNKNOWN",
                     }
                     srv.publish_event(event)
                     continue
                 event = {
                     "type": "status",
-                    "class": status,
+                    "status": status,
                 }
                 srv.publish_event(event)
         except KeyboardInterrupt:

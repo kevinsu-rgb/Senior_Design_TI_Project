@@ -1,6 +1,8 @@
 import socket
 import time
 import json
+import threading
+import queue
 from typing import Dict, Any, Iterator, Optional
 
 DISCOVERY_MAGIC_Q = b"RADAR_DISCOVERY_V1?"
@@ -101,24 +103,76 @@ def choose_device(devices: list[dict]) -> Optional[dict]:
         print("Invalid selection. Try again.")
 
 
-if __name__ == "__main__":
+def _stream_device(dev: dict, status_queue: queue.Queue, events_lock: threading.Lock):
+    # Connect to one device and print events as they arrive. This is designed to run in a separate thread for each device.
+    name = dev.get("name", "unknown")
+    ip = dev.get("ip")
+    port = dev.get("tcp_port")
+    prefix = f"[{name} {ip}:{port}]"
+
+    count = 0
+    while True:
+        if count > 5:
+            print(f"{prefix} too many connection failures, giving up.")
+            break
+        try:
+            for evt in connect_and_stream(ip, port):
+                print(f"{prefix} {evt}")
+                with events_lock:
+                    status_queue.put((ip, evt))
+
+        except KeyboardInterrupt:
+            raise
+        except OSError as e:
+            # If the server goes away, retry after a short delay
+            print(f"{prefix} connection error: {e}. Reconnecting in 1s...")
+            time.sleep(1.0)
+            count += 1
+        except Exception as e:
+            print(f"{prefix} unexpected error: {e}. Reconnecting in 1s...")
+            time.sleep(1.0)
+            count += 1
+
+def _stream_all(devices: list[dict], status_queue):
+    events_by_ip: Dict[str, Any] = {}
+    events_lock = threading.Lock()
+
+    for dev in devices:
+        t = threading.Thread(target=_stream_device, args=(dev, status_queue, events_lock), daemon=True)
+        t.start()
+
+    
+
+def main():
     devices = discover_pis(timeout_s=1.0)
+    print(devices)
+    time.sleep(4)  # Small delay to ensure all responses are printed before proceeding
     if not devices:
         print("No devices found. Make sure the Pi server is running and you are on the same LAN.")
         raise SystemExit(1)
 
-    dev = choose_device(devices)
-    if dev is None:
-        print("No device selected.")
-        raise SystemExit(1)
+    # If only one device is found, connect to it.
+    # If multiple are found, connect to all of them concurrently.
+    if len(devices) == 1:
+        selected = devices
+    else:
+        print("Multiple devices found. Connecting to all.")
+        for d in devices:
+            print(f"  - {d['name']} at {d['ip']}:{d['tcp_port']} (ver={d['ver']})")
+        selected = devices
 
-    print(f"Connecting to {dev['name']} at {dev['ip']}:{dev['tcp_port']}...")
+    events_by_ip = _stream_all(selected)
+
+    # Keep main thread alive so daemon threads can run
     try:
-        for evt in connect_and_stream(dev["ip"], dev["tcp_port"]):
-            # Print events as they arrive
-            print(evt)
+        while True:
+            time.sleep(2.0)
+            # Snapshot of the latest event per device
+            for ip, evt in list(events_by_ip.items()):
+                print(f"[latest {ip}] {evt}")
     except KeyboardInterrupt:
         pass
-    except OSError as e:
-        print(f"Connection error: {e}")
-        raise SystemExit(2)
+
+
+if __name__ == "__main__":
+    main()
