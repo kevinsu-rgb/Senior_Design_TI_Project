@@ -6,6 +6,8 @@ export default function RadarListElement({ radarId }) {
 
     const config = getStatusTheme(radar?.status);
 
+    console.log("Rendering RadarListElement for radarId:", radarId, "with status:", radar?.status);
+
     return (
         <div
             className={`${config.cardBg} ${config.cardBorder} h-full overflow-hidden border-2 rounded-lg p-5 flex items-center justify-between`}

@@ -7,108 +7,146 @@ from flask_socketio import emit
 from . import bt_status
 from . import socketio, status_queue
 
+import logging
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
+
 background_task_started = False
 state_lock = threading.Lock()
 start_time = time.time()
-latest_live_status = "unknown"
-display_status = "unknown"
-previous_logged_status = "unknown"
-fault_latched = False
-activity_log = []
+
+# Per-radar state keyed by radar_ip so multiple radars don't overwrite each other.
+# Each value contains only what the UI needs.
+radars_state = {}
 
 
 def _now_hms():
     return time.strftime("%H:%M:%S", time.gmtime())
 
 
-def _uptime_string():
+def _uptime_string() -> str:
     uptime = int(time.time() - start_time)
     return f"{uptime//86400}d {(uptime%86400)//3600}h {(uptime%3600)//60}m {uptime%60}s"
 
 
-def _build_update_payload(radar_id: int):
-    with state_lock:
-        return {
-            "radar_id": radar_id,
-            "is_connected": True,
-            "status": display_status,
+def _get_radar_state(radar_ip: str) -> dict:
+    # Caller must hold state_lock.
+    st = radars_state.get(radar_ip)
+    if st is None:
+        st = {
+            "latest_live_status": "unknown",
+            "display_status": "unknown",
+            "previous_logged_status": "unknown",
+            "fault_latched": False,
+            "activity_log": [],
             "people_count": 1,
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "activity_log": activity_log[-5:],
-            "uptime": _uptime_string(),
-            "fault_latched": fault_latched,
         }
+        radars_state[radar_ip] = st
+    return st
 
 
-def clear_fault(radar_id: int):
-    global fault_latched, display_status, previous_logged_status
+def _build_update_payload(radar_ip: str) -> dict:
+    # Caller needs to hold state_lock.
+    st = _get_radar_state(radar_ip)
+    return {
+        "radar_ip": radar_ip,
+        "is_connected": True,
+        "status": st.get("display_status", "unknown"),
+        "people_count": int(st.get("people_count", 0)),
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "activity_log": st.get("activity_log", [])[-5:],
+        "uptime": _uptime_string(),
+        "fault_latched": bool(st.get("fault_latched", False)),
+    }
 
-    if radar_id != 1:
-        return {"ok": False, "message": "Radar not found"}, 404
 
+def clear_fault(radar_ip: str):
     with state_lock:
-        fault_latched = False
-        display_status = latest_live_status
-        previous_logged_status = display_status
-        activity_log.append({"time": _now_hms(), "event": "Fault cleared"})
+        if radar_ip not in radars_state:
+            return {"ok": False, "message": "Radar not found"}, 404
 
-    socketio.emit("radar_status_update", {"updates": _build_update_payload()})
+        st = _get_radar_state(radar_ip)
+        st["fault_latched"] = False
+        st["display_status"] = st.get("latest_live_status")
+        st["previous_logged_status"] = st["display_status"]
+        st.setdefault("activity_log", []).append({"time": _now_hms(), "event": "Fault cleared"})
+
+    socketio.emit("radar_status_update", {"updates": _build_update_payload(radar_ip)})
     return {"ok": True, "fault_latched": False}, 200
 
-
+# TODO: uptime doesnt update with this logic, maybe put uptime on the client side and just send server start time?
+# also need to handle radar going offline
 def background_thread():
     global status_queue
-    global latest_live_status, display_status, previous_logged_status, fault_latched
-    
+
     while True:
-        newest_status = None
+
+        # Drain the queue and update per-radar state.
         while not status_queue.empty():
             item = status_queue.get_nowait()
+
+            ip = None
+            evt = None
+
             # New format: (ip, evt)
             if isinstance(item, tuple) and len(item) >= 2:
                 ip = item[0]
                 evt = item[1]
-                if isinstance(evt, dict):
-                    newest_status = evt.get("status")
-                elif isinstance(evt, str):
-                    newest_status = evt
-                else:
-                    newest_status = None
 
-                if newest_status is not None:
-                    newest_status = str(newest_status).lower()
-
+                log.info(f"Received status update from {ip}: {evt}")
+                
+            else:
                 continue
 
-            # Legacy format: plain string
-            if isinstance(item, str):
-                newest_status = item.lower()
+            if not ip:
+                continue
 
+            newest_status = None
 
-        if newest_status is not None:
+            if isinstance(evt, dict):
+                newest_status = evt.get("status")
+            elif isinstance(evt, str):
+                newest_status = evt
+            else:
+                newest_status = None
+
+            if newest_status is not None:
+                newest_status = str(newest_status).lower()
+            if newest_status is None:
+                continue
+
             with state_lock:
-                latest_live_status = newest_status
-                if not fault_latched:
-                    if newest_status != previous_logged_status:
-                        activity_log.append(
-                            {
-                                "time": _now_hms(),
-                                "event": f"Status changed: {previous_logged_status} → {newest_status}",
-                            }
-                        )
-                        previous_logged_status = newest_status
+                st = _get_radar_state(ip)
 
-                    display_status = newest_status
-                    if newest_status == "falling":
-                        fault_latched = True
+                log.info(f"Processing status for {ip}: newest_status={newest_status}, display_status={st.get('display_status')}, fault_latched={st.get('fault_latched')}")
 
-        socketio.emit(
-            "radar_status_update",
-            # TODO: use radarid.
-            {"updates": _build_update_payload(1)},
-        )
-        # Emit at a stable cadence so clients do not get flooded.
-        socketio.sleep(1)
+                if newest_status == st.get("latest_live_status"):
+                    # No change, skip.
+                    continue
+                else:
+                    st["latest_live_status"] = newest_status
+
+                    if st.get("fault_latched", False):
+                        # If fault is latched, display status does not change until cleared.
+                        continue
+                    else:
+                        st["display_status"] = newest_status
+                        if newest_status != st["previous_logged_status"]:
+                            st["activity_log"].append(
+                                {
+                                    "time": _now_hms(),
+                                    "event": f"Status changed: {st['previous_logged_status']} → {newest_status}",
+                                }
+                            )
+                            st["previous_logged_status"] = newest_status
+
+                        if newest_status == "falling":
+                            st["fault_latched"] = True
+                        
+                        socketio.emit("radar_status_update", {"updates": _build_update_payload(ip)})
+
+        socketio.sleep(0.05)  # Sleep briefly to avoid busy loop when queue is empty.
+                
 
 
 @socketio.on("connect")

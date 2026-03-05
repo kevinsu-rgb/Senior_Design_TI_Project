@@ -49,10 +49,15 @@ export default function RadarProvider({ children }) {
     const onRadarStatusUpdate = (data) => {
       const updates = data.updates;
 
+      
+
       setRadarList((prev) =>
-        prev.map((radar) =>
-          radar.radar_id === updates.radar_id ? { ...radar, ...updates } : radar
-        )
+        prev.map((radar) => {
+          console.log("Comparing radar_ip:", radar.radar_ip, "with update_ip:", updates.radar_ip);
+          return radar.radar_ip === updates.radar_ip
+            ? { ...radar, ...updates }
+            : radar;
+        })
       );
     };
 
@@ -63,13 +68,13 @@ export default function RadarProvider({ children }) {
     };
   }, [ws, isConnected]);
 
-  const clearRadarFault = async (radarId) => {
+  const clearRadarFault = async (radarIp) => {
     try {
-      const response = await fetch(`/api/radar/${radarId}/clear-fault`, {
+      const response = await fetch(`/api/radar/${radarIp}/clear-fault`, {
         method: "POST",
       });
       if (!response.ok) {
-        throw new Error(`Failed to clear fault for radar ${radarId}`);
+        throw new Error(`Failed to clear fault for radar ${radarIp}`);
       }
     } catch (err) {
       console.error("Error clearing radar fault: ", err);

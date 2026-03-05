@@ -21,7 +21,7 @@ export default function RadarList() {
 					key={radar.radar_id}
 					onClick={() =>
 						navigate(`/radar/${radar.radar_id}`, {
-							state: { radarId: radar.radar_id },
+							state: { radarId: radar.radar_id, radarIp: radar.radar_ip },
 						})
 					}
 					className="cursor-pointer hover:opacity-80 transition"
