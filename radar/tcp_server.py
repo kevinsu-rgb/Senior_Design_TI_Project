@@ -151,19 +151,6 @@ class RadarTcpServer:
             with self._clients_lock:
                 self._clients.append((client, addr))
 
-            # send a hello
-            hello = {
-                "type": "hello",
-                "ts_ms": _now_ms(),
-                "name": self.cfg.name,
-                "tcp_port": self.cfg.tcp_port,
-                "ver": 1,
-            }
-            try:
-                client.sendall((json.dumps(hello) + "\n").encode("utf-8"))
-            except Exception:
-                self._drop_client(client)
-
         try:
             srv.close()
         except Exception:
