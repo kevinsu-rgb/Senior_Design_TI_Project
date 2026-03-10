@@ -1,0 +1,96 @@
+Change Footprint: Footprint Not Found FP-C0402-BB-MFG
+Change Footprint: Footprint Not Found FP-CL549-IPC_C
+Change Footprint: Footprint Not Found FP-CL549-IPC_C
+Change Footprint: Footprint Not Found FP-CL549-IPC_C
+Change Footprint: Footprint Not Found FP-CL549-IPC_C
+Change Footprint: Footprint Not Found FP-CL549-IPC_C
+Change Footprint: Footprint Not Found FP-CL549-IPC_C
+Change Footprint: Footprint Not Found FP-CL549-IPC_C
+Change Footprint: Footprint Not Found FP-CR0805-IPC_A
+Change Footprint: Footprint Not Found FP-CR0805-IPC_A
+Change Footprint: Footprint Not Found FP-GCM155-0_05-IPC_A
+Change Footprint: Footprint Not Found FP-GCM155-0_05-IPC_A
+Change Footprint: Footprint Not Found FP-GRM155-0_05-IPC_C
+Change Footprint: Footprint Not Found FP-GRM188-0_2-IPC_B
+Change Footprint: Footprint Not Found FP-GRM188-0_2-MFG
+Change Footprint: Footprint Not Found FP-GRM188-0_2-MFG
+Change Footprint: Footprint Not Found FP-GRM188-0_2-MFG
+Change Footprint: Footprint Not Found FP-GRT155-0_05-IPC_B
+Change Footprint: Footprint Not Found FP-GRT155-0_05-IPC_B
+Change Footprint: Footprint Not Found FP-GRT155-0_05-IPC_B
+Added Component: Designator=J1(2714)
+Add component (AddParameter): Name = "Category"; Value = "Headers and Wire Housings"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer"; Value = "Adafruit Industries"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer Part Number"; Value = "2714"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Pricing"; Value = "1=2.95 (USD)"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "RoHS"; Value = "Non-Compliant"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Schedule B"; Value = "8536694040, 8536694040|8536694040|8536694040|8536694040|8536694040"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Stock"; Value = "1"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Supplier"; Value = "Arrow Electronics"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Supplier Part Number"; Value = "2714"; VariantName = "[No Variations]"
+Add Component: Footprint Not Found 0402L
+Add Component: Footprint Not Found FP-RC0402JR-070RP_0402-MFG
+Add Component: Footprint Not Found FP-RC0402JR-070RP_0402-MFG
+Add Component: Footprint Not Found FP-AYZ0102AGRLC_SMT_SW_7MM2_5MM3-MFG
+Added Pin To Net: NetName=5V_REG Pin=J1-2
+Added Pin To Net: NetName=NetJ1_3 Pin=J1-3
+Added Pin To Net: NetName=NetJ1_5 Pin=J1-5
+Added Pin To Net: NetName=NetJ1_7 Pin=J1-7
+Added Pin To Net: NetName=NetJ1_8 Pin=J1-8
+Added Pin To Net: NetName=NetJ1_10 Pin=J1-10
+Added Pin To Net: NetName=NetJ1_11 Pin=J1-11
+Added Pin To Net: NetName=NetJ1_12 Pin=J1-12
+Added Pin To Net: NetName=NetJ1_13 Pin=J1-13
+Added Pin To Net: NetName=GND Pin=J1-14
+Added Pin To Net: NetName=NetJ1_15 Pin=J1-15
+Added Pin To Net: NetName=NetJ1_16 Pin=J1-16
+Added Pin To Net: NetName=NetJ1_18 Pin=J1-18
+Added Pin To Net: NetName=NetJ1_19 Pin=J1-19
+Added Pin To Net: NetName=GND Pin=J1-20
+Added Pin To Net: NetName=NetJ1_21 Pin=J1-21
+Added Pin To Net: NetName=NetJ1_23 Pin=J1-23
+Added Pin To Net: NetName=NetJ1_24 Pin=J1-24
+Add Pin To Net: Unknown Pin: Pin R2-1
+Add Pin To Net: Unknown Pin: Pin R2-2
+Add Pin To Net: Unknown Pin: Pin R3-1
+Add Pin To Net: Unknown Pin: Pin R3-2
+Add Pin To Net: Unknown Pin: Pin R4-1
+Add Pin To Net: Unknown Pin: Pin R4-2
+Add Pin To Net: Unknown Pin: Pin R31-1
+Add Pin To Net: Unknown Pin: Pin R31-2
+Add Pin To Net: Unknown Pin: Pin R36-1
+Add Pin To Net: Unknown Pin: Pin R36-2
+Add Pin To Net: Unknown Pin: Pin R37-1
+Add Pin To Net: Unknown Pin: Pin R37-2
+Add Pin To Net: Unknown Pin: Pin SW1-1
+Add Pin To Net: Unknown Pin: Pin SW1-2
+Add Pin To Net: Unknown Pin: Pin SW1-3
+Add Pin To Net: Unknown Pin: Pin U5-1
+Add Pin To Net: Unknown Pin: Pin U5-2
+Add Pin To Net: Unknown Pin: Pin U5-3
+Add Pin To Net: Unknown Pin: Pin U5-4
+Add Pin To Net: Unknown Pin: Pin U5-5
+Add Pin To Net: Unknown Pin: Pin U5-7
+Add Pin To Net: Unknown Pin: Pin U5-8
+Add Pin To Net: Unknown Pin: Pin U6-1
+Add Pin To Net: Unknown Pin: Pin U6-2
+Add Pin To Net: Unknown Pin: Pin U6-3
+Add Pin To Net: Unknown Pin: Pin U6-4
+Add Pin To Net: Unknown Pin: Pin U6-5
+Add Pin To Net: Unknown Pin: Pin U6-7
+Add Pin To Net: Unknown Pin: Pin U6-8
+Add Pin To Net: Unknown Pin: Pin Y1-1
+Add Pin To Net: Unknown Pin: Pin Y1-2
+Add Pin To Net: Unknown Pin: Pin Y1-3
+Add Pin To Net: Unknown Pin: Pin Y1-4
+Added Member To Class: ClassName=IO Member=Component J1 2714
+Add Class Member: Failed to add class member : Component R2 Resistor
+Add Class Member: Failed to add class member : Component R3 Resistor
+Add Class Member: Failed to add class member : Component R4 Resistor
+Add Class Member: Failed to add class member : Component R31 CRCW040282K5FKED
+Add Class Member: Failed to add class member : Component R36 RC0402JR-070RP
+Add Class Member: Failed to add class member : Component R37 RC0402JR-070RP
+Add Class Member: Failed to add class member : Component SW1 AYZ0102AGRLC
+Add Class Member: Failed to add class member : Component U5 TPS6285020ADRLR
+Add Class Member: Failed to add class member : Component U6 TPS6285020MDRLR
+Add Class Member: Failed to add class member : Component Y1 XRCGB40M000F1S2GR0

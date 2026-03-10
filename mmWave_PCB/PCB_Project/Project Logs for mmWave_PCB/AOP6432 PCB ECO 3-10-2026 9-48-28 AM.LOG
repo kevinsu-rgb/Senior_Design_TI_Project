@@ -1,0 +1,88 @@
+Removed Member From Class: ClassName=AOPIO Member=R23
+Change Footprint: Footprint Not Found FP-C0402-BB-MFG
+Change Footprint: Footprint Not Found FP-CL549-IPC_C
+Change Footprint: Footprint Not Found FP-CL549-IPC_C
+Change Footprint: Footprint Not Found FP-CL549-IPC_C
+Change Footprint: Footprint Not Found FP-CL549-IPC_C
+Change Footprint: Footprint Not Found FP-CL549-IPC_C
+Change Footprint: Footprint Not Found FP-CL549-IPC_C
+Change Footprint: Footprint Not Found FP-CL549-IPC_C
+Change Footprint: Footprint Not Found FP-CR0805-IPC_A
+Change Footprint: Footprint Not Found FP-CR0805-IPC_A
+Change Footprint: Footprint Not Found FP-GCM155-0_05-IPC_A
+Change Footprint: Footprint Not Found FP-GCM155-0_05-IPC_A
+Change Footprint: Footprint Not Found FP-GRM155-0_05-IPC_C
+Change Footprint: Footprint Not Found FP-GRM188-0_2-IPC_B
+Change Footprint: Footprint Not Found FP-GRM188-0_2-MFG
+Change Footprint: Footprint Not Found FP-GRM188-0_2-MFG
+Change Footprint: Footprint Not Found FP-GRM188-0_2-MFG
+Change Footprint: Footprint Not Found FP-GRT155-0_05-IPC_B
+Change Footprint: Footprint Not Found FP-GRT155-0_05-IPC_B
+Change Footprint: Footprint Not Found FP-GRT155-0_05-IPC_B
+Change Component Description : Designator=U2 Old Description=1.6-V to 5.5-V, 40-mâ„ New Description=1.6-V to 5.5-V, 40-mâ„|, 2.5-A, low-IQ, priority power multiplexer ; 8-SOT-5X3 -40 to 125
+Add Component: Footprint Not Found 0402L
+Add Component: Footprint Not Found FP-RC0402JR-070RP_0402-MFG
+Add Component: Footprint Not Found FP-RC0402JR-070RP_0402-MFG
+Add Component: Footprint Not Found FP-AYZ0102AGRLC_SMT_SW_7MM2_5MM3-MFG
+Add Pin To Net: Unknown Pin: Pin J1-2
+Add Pin To Net: Unknown Pin: Pin J1-3
+Add Pin To Net: Unknown Pin: Pin J1-5
+Add Pin To Net: Unknown Pin: Pin J1-7
+Add Pin To Net: Unknown Pin: Pin J1-8
+Add Pin To Net: Unknown Pin: Pin J1-10
+Add Pin To Net: Unknown Pin: Pin J1-11
+Add Pin To Net: Unknown Pin: Pin J1-12
+Add Pin To Net: Unknown Pin: Pin J1-13
+Add Pin To Net: Unknown Pin: Pin J1-14
+Add Pin To Net: Unknown Pin: Pin J1-15
+Add Pin To Net: Unknown Pin: Pin J1-16
+Add Pin To Net: Unknown Pin: Pin J1-18
+Add Pin To Net: Unknown Pin: Pin J1-19
+Add Pin To Net: Unknown Pin: Pin J1-20
+Add Pin To Net: Unknown Pin: Pin J1-21
+Add Pin To Net: Unknown Pin: Pin J1-23
+Add Pin To Net: Unknown Pin: Pin J1-24
+Add Pin To Net: Unknown Pin: Pin R2-1
+Add Pin To Net: Unknown Pin: Pin R2-2
+Add Pin To Net: Unknown Pin: Pin R3-1
+Add Pin To Net: Unknown Pin: Pin R3-2
+Add Pin To Net: Unknown Pin: Pin R4-1
+Add Pin To Net: Unknown Pin: Pin R4-2
+Add Pin To Net: Unknown Pin: Pin R31-1
+Add Pin To Net: Unknown Pin: Pin R31-2
+Add Pin To Net: Unknown Pin: Pin R36-1
+Add Pin To Net: Unknown Pin: Pin R36-2
+Add Pin To Net: Unknown Pin: Pin R37-1
+Add Pin To Net: Unknown Pin: Pin R37-2
+Add Pin To Net: Unknown Pin: Pin SW1-1
+Add Pin To Net: Unknown Pin: Pin SW1-2
+Add Pin To Net: Unknown Pin: Pin SW1-3
+Add Pin To Net: Unknown Pin: Pin U5-1
+Add Pin To Net: Unknown Pin: Pin U5-2
+Add Pin To Net: Unknown Pin: Pin U5-3
+Add Pin To Net: Unknown Pin: Pin U5-4
+Add Pin To Net: Unknown Pin: Pin U5-5
+Add Pin To Net: Unknown Pin: Pin U5-7
+Add Pin To Net: Unknown Pin: Pin U5-8
+Add Pin To Net: Unknown Pin: Pin U6-1
+Add Pin To Net: Unknown Pin: Pin U6-2
+Add Pin To Net: Unknown Pin: Pin U6-3
+Add Pin To Net: Unknown Pin: Pin U6-4
+Add Pin To Net: Unknown Pin: Pin U6-5
+Add Pin To Net: Unknown Pin: Pin U6-7
+Add Pin To Net: Unknown Pin: Pin U6-8
+Add Pin To Net: Unknown Pin: Pin Y1-1
+Add Pin To Net: Unknown Pin: Pin Y1-2
+Add Pin To Net: Unknown Pin: Pin Y1-3
+Add Pin To Net: Unknown Pin: Pin Y1-4
+Add Class Member: Failed to add class member : Component J1 2714
+Add Class Member: Failed to add class member : Component R2 Resistor
+Add Class Member: Failed to add class member : Component R3 Resistor
+Add Class Member: Failed to add class member : Component R4 Resistor
+Add Class Member: Failed to add class member : Component R31 CRCW040282K5FKED
+Add Class Member: Failed to add class member : Component R36 RC0402JR-070RP
+Add Class Member: Failed to add class member : Component R37 RC0402JR-070RP
+Add Class Member: Failed to add class member : Component SW1 AYZ0102AGRLC
+Add Class Member: Failed to add class member : Component U5 TPS6285020ADRLR
+Add Class Member: Failed to add class member : Component U6 TPS6285020MDRLR
+Add Class Member: Failed to add class member : Component Y1 XRCGB40M000F1S2GR0
