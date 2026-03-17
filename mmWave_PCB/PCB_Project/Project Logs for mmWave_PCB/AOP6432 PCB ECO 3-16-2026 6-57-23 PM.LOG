@@ -1,0 +1,23 @@
+Change Footprint: Footprint Not Found FP-CL549-IPC_C
+Change Footprint: Footprint Not Found FP-GRM188-0_2-MFG
+Change Footprint: Footprint Not Found FP-GRT155-0_05-IPC_B
+Add Component: Footprint Not Found SW_AYZ0102AGRLC
+Added Component: Designator=Y1(XRCGB40M000F1S2GR0)
+Add component (AddParameter): Name = "Category"; Value = "Crystals"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink1Description"; Value = "http://sigma.octopart.com:80/reach_statement/Murata-company-16.pdf?src-supplier=Compliance+Statements"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink1URL"; Value = "http://sigma.octopart.com:80/reach_statement/Murata-company-16.pdf?src-supplier=Compliance+Statements"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer"; Value = "Murata"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer Part Number"; Value = "XRCGB40M000F1S2GR0"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Pricing"; Value = "1=0.31, 10=0.273, 25=0.2584, 50=0.2478, 100=0.2376, 250=0.22472, 500=0.21544, 1000=0.20652 (USD)"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Stock"; Value = "3900"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Supplier"; Value = "DigiKey"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Supplier Part Number"; Value = "490-XRCGB40M000F1S2GR0CT-ND"; VariantName = "[No Variations]"
+Add Pin To Net: Unknown Pin: Pin SW1-1
+Add Pin To Net: Unknown Pin: Pin SW1-2
+Add Pin To Net: Unknown Pin: Pin SW1-3
+Added Pin To Net: NetName=NetC10_1 Pin=Y1-1
+Added Pin To Net: NetName=GND Pin=Y1-2
+Added Pin To Net: NetName=NetC9_1 Pin=Y1-3
+Added Pin To Net: NetName=GND Pin=Y1-4
+Add Class Member: Failed to add class member : Component SW1 AYZ0102AGRLC
+Added Member To Class: ClassName=IWRL6432AOP Member=Component Y1 XRCGB40M000F1S2GR0
