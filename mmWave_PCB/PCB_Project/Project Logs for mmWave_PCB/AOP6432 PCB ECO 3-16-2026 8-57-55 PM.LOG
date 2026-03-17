@@ -1,0 +1,29 @@
+Removed Pin From Net: NetName=GND Pin=C1-1
+Removed Pin From Net: NetName=NetC1_2 Pin=C1-2
+Removed Pin From Net: NetName=GND Pin=C55-1
+Removed Pin From Net: NetName=GND Pin=C56-1
+Change Component Footprint: Designator=C56 Old Footprint=FP-CL549-IPC_C New Footprint=FP-GCM033-0_03-IPC_B
+Change Component Footprint: Designator=C55 Old Footprint=FP-GRM188-0_2-MFG New Footprint=FP-GCM033-0_03-IPC_B
+Change Component Footprint: Designator=C1 Old Footprint=FP-GRT155-0_05-IPC_B New Footprint=FP-CL549-IPC_C
+Change Component Designator: OldDesignator=SW? NewDesignator=SW1
+Change Managed Component Library Link : Designator=C55 Old VaultGUID=7C5C494C-8C0B-46E3-B7B5-096FDD15FE09 New VaultGUID=B7D15EC3-160A-466F-A46C-7801FE6295A7 Old ItemGUID=C8B3D801-E1D6-455F-A799-7EEEB7819B4D New ItemGUID=CDDC98FF-6100-40AD-ABC5-7D9E088E452B Old RevisionGUID=200EC2D5-DCF9-4631-BC45-6F667FC43992 New RevisionGUID=01E5FFC9-C318-4674-B3F5-19FF2687435E
+Change Managed Component Library Link : Designator=C56 Old VaultGUID=7C5C494C-8C0B-46E3-B7B5-096FDD15FE09 New VaultGUID=B7D15EC3-160A-466F-A46C-7801FE6295A7 Old ItemGUID=C8B3D801-E1D6-455F-A799-7EEEB7819B4D New ItemGUID=CDDC98FF-6100-40AD-ABC5-7D9E088E452B Old RevisionGUID=200EC2D5-DCF9-4631-BC45-6F667FC43992 New RevisionGUID=01E5FFC9-C318-4674-B3F5-19FF2687435E
+Change component parameters: Designator = "C55" ("C55"); Footprint = "FP-GRM188-0_2-MFG"; UniqueID = "\SFUAWMMO" ("\SFUAWMMO")
+Change component parameters (AddParameter): Name = "Capacitance"; Value = "22pF"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Voltage"; Value = "25V"; VariantName = "[No Variations]"
+Change component parameters: Designator = "C56" ("C56"); Footprint = "FP-CL549-IPC_C"; UniqueID = "\AIKDAJHM" ("\AIKDAJHM")
+Change component parameters (AddParameter): Name = "Capacitance"; Value = "22pF"; VariantName = "[No Variations]"
+Change component parameters (AddParameter): Name = "Voltage"; Value = "25V"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=NetC1_2 Pin=C1-1
+Added Pin To Net: NetName=GND Pin=C1-2
+Added Pin To Net: NetName=GND Pin=C55-2
+Added Pin To Net: NetName=GND Pin=C56-2
+Change Net Name : Old Net Name=NetC1_2 New Net Name=NetC1_1
+Added Pin To Net: NetName=NetC55_1 Pin=C55-1
+Added Pin To Net: NetName=NetC55_1 Pin=R34-2
+Added Pin To Net: NetName=NetC55_1 Pin=U8-8
+Added Net: Name=NetC55_1
+Added Pin To Net: NetName=NetC56_1 Pin=C56-1
+Added Pin To Net: NetName=NetC56_1 Pin=R35-2
+Added Pin To Net: NetName=NetC56_1 Pin=U8-9
+Added Net: Name=NetC56_1
