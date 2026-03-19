@@ -1,0 +1,91 @@
+Change Footprint: Footprint Not Found FP-CL549-IPC_C
+Change Footprint: Footprint Not Found FP-GRM188-0_2-MFG
+Change Footprint: Footprint Not Found FP-GRT155-0_05-IPC_B
+Change Component Description : Designator=U2 Old Description=1.6-V to 5.5-V, 40-mâ„ New Description=1.6-V to 5.5-V, 40-mâ„|, 2.5-A, low-IQ, priority power multiplexer ; 8-SOT-5X3 -40 to 125
+Change Component Description : Designator=J1 Old Description=Extra-Tall Smt Gpio Header For Raspberry Pi Hat - 2X20 Extra Tall Female Header New Description=Extra-Tall Smt Gpio Header For Raspberry Pi Hat - 2X20 Extra Tall Female Header |Adafruit 2714
+Add Component: Footprint Not Found SW_AYZ0102AGRLC
+Added Component: Designator=U5(TPS6285020ADRLR)
+Add component (AddParameter): Name = "Category"; Value = "Voltage Regulators - Switching"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink1Description"; Value = "https://sigma.octopart.com:443/184160452/technical_drawing/Texas-Instruments-TPS6285020ADRLR.pdf?src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink1URL"; Value = "https://sigma.octopart.com:443/184160452/technical_drawing/Texas-Instruments-TPS6285020ADRLR.pdf?src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink2Description"; Value = "https://octopart.com:443/opatz8j6/c1?t=04P0fWGL_cudllwmZINDiw2LV0UnQCBdEPC0TCiqtskBizWNZcYiud0zDodHV72PkfVAyckZwdOCP8RKkn6kOfyc1n5ayLeA0HxSBWJegEPGSGLcx5ZDwSrrVBBZMisL5iy0W6ZDyev6DYemWZv0TF3G9z2uzb8IyCt9JtlxFA4Kz3ep-HVrOA020RUMv0sDaqoO5QXkreUu2MZnPzpZ92hCZ4nlw88inlc1y5NUq3fymrAhanz4vne6D2PwE_A-BqCeNi6ywDWj7Zh3gVnmYHWucFLezg1APRGL1y_LI3b9EYi3y23IDx847xhIzfpELOnbBqVJCU5eR59dsCpX5dCCqJQSO7fhMA-LdTBewxpk-7SPURUjvrKQ9fgVnwgpJBWZzZVV-DQ&src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink2URL"; Value = "https://octopart.com:443/opatz8j6/c1?t=04P0fWGL_cudllwmZINDiw2LV0UnQCBdEPC0TCiqtskBizWNZcYiud0zDodHV72PkfVAyckZwdOCP8RKkn6kOfyc1n5ayLeA0HxSBWJegEPGSGLcx5ZDwSrrVBBZMisL5iy0W6ZDyev6DYemWZv0TF3G9z2uzb8IyCt9JtlxFA4Kz3ep-HVrOA020RUMv0sDaqoO5QXkreUu2MZnPzpZ92hCZ4nlw88inlc1y5NUq3fymrAhanz4vne6D2PwE_A-BqCeNi6ywDWj7Zh3gVnmYHWucFLezg1APRGL1y_LI3b9EYi3y23IDx847xhIzfpELOnbBqVJCU5eR59dsCpX5dCCqJQSO7fhMA-LdTBewxpk-7SPURUjvrKQ9fgVnwgpJBWZzZVV-DQ&src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink3Description"; Value = "https://sigma.octopart.com:443/182665545/technical_drawing/Texas-Instruments-TPS6285020ADRLR.pdf?src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink3URL"; Value = "https://sigma.octopart.com:443/182665545/technical_drawing/Texas-Instruments-TPS6285020ADRLR.pdf?src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink4Description"; Value = "https://sigma.octopart.com:443/158891806/technical_drawing/Texas-Instruments-TPS6285020ADRLR.pdf?src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink4URL"; Value = "https://sigma.octopart.com:443/158891806/technical_drawing/Texas-Instruments-TPS6285020ADRLR.pdf?src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink5Description"; Value = "http://sigma.octopart.com:80/reach_statement/Texas-Instruments-company-64.pdf?src-supplier=Compliance+Statements"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink5URL"; Value = "http://sigma.octopart.com:80/reach_statement/Texas-Instruments-company-64.pdf?src-supplier=Compliance+Statements"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink6Description"; Value = "http://sigma.octopart.com:80/conflict_mineral_statement/Texas-Instruments-company-63.pdf?src-supplier=Compliance+Statements"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink6URL"; Value = "http://sigma.octopart.com:80/conflict_mineral_statement/Texas-Instruments-company-63.pdf?src-supplier=Compliance+Statements"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Height"; Value = "0m"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Length"; Value = "2.1mm"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Lifecycle Status"; Value = "Production"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer"; Value = "Texas Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer Lifecycle Status"; Value = "ACTIVE"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer Part Number"; Value = "TPS6285020ADRLR"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Pins"; Value = "8"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Pricing"; Value = "1=1.52, 10=1.11, 25=1.0072, 100=0.8944, 250=0.8406, 500=0.80822, 1000=0.78154 (USD)"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "RoHS"; Value = "Compliant"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Stock"; Value = "3967"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Supplier"; Value = "DigiKey"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Supplier Part Number"; Value = "296-TPS6285020ADRLRCT-ND"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Thickness"; Value = "550µm"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Topology"; Value = "Buck"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Width"; Value = "1.2mm"; VariantName = "[No Variations]"
+Added Component: Designator=U6(TPS6285020MDRLR)
+Add component (AddParameter): Name = "Category"; Value = "Voltage Regulators - Switching"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink1Description"; Value = "https://sigma.octopart.com:443/184160452/technical_drawing/Texas-Instruments-TPS6285020MDRLR.pdf?src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink1URL"; Value = "https://sigma.octopart.com:443/184160452/technical_drawing/Texas-Instruments-TPS6285020MDRLR.pdf?src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink2Description"; Value = "https://octopart.com:443/opatz8j6/c1?t=j3yBvK7Knh4WlWv-GCmcuFftOO46dSNwGQl-vghnWa4P5FbmLUGqZNdsGfaa2BRR46_Y1nzoe2qF8sMvCt876JOyEgPizEtcT2yvP1vZQytL7fg4rcnOrOugqRiKWn0286UeK7FulRXUg4pTSKccoaKiJwsZgYKIRxgW7j4fAHRZJY4lsJ0ZDv8xhLvzrIp2Pcb8cqxZC7ty7vl1hVH_WtJZr1qIj67qX8542lWXUQdjGQKeDgJuvlZqR-rHtLmJKlwkQEL8PBADkijrD9-u13OcaRMmMNay04XWwwbZoMmW1KE4hF6cOnWV_RA-QnpXjrLeXbxdYo-tweympHrjh5YqTTZaQriQ9CqmxVDrh805T_blsE6klgcM7lXPiTRjw5KW9wlzXuU&src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink2URL"; Value = "https://octopart.com:443/opatz8j6/c1?t=j3yBvK7Knh4WlWv-GCmcuFftOO46dSNwGQl-vghnWa4P5FbmLUGqZNdsGfaa2BRR46_Y1nzoe2qF8sMvCt876JOyEgPizEtcT2yvP1vZQytL7fg4rcnOrOugqRiKWn0286UeK7FulRXUg4pTSKccoaKiJwsZgYKIRxgW7j4fAHRZJY4lsJ0ZDv8xhLvzrIp2Pcb8cqxZC7ty7vl1hVH_WtJZr1qIj67qX8542lWXUQdjGQKeDgJuvlZqR-rHtLmJKlwkQEL8PBADkijrD9-u13OcaRMmMNay04XWwwbZoMmW1KE4hF6cOnWV_RA-QnpXjrLeXbxdYo-tweympHrjh5YqTTZaQriQ9CqmxVDrh805T_blsE6klgcM7lXPiTRjw5KW9wlzXuU&src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink3Description"; Value = "https://sigma.octopart.com:443/182665545/technical_drawing/Texas-Instruments-TPS6285020MDRLR.pdf?src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink3URL"; Value = "https://sigma.octopart.com:443/182665545/technical_drawing/Texas-Instruments-TPS6285020MDRLR.pdf?src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink4Description"; Value = "https://sigma.octopart.com:443/158891806/technical_drawing/Texas-Instruments-TPS6285020MDRLR.pdf?src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink4URL"; Value = "https://sigma.octopart.com:443/158891806/technical_drawing/Texas-Instruments-TPS6285020MDRLR.pdf?src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink5Description"; Value = "https://datasheet.octopart.com:443/TPS6285020MDRLR-Texas-Instruments-datasheet-190364767.pdf?src-supplier=LCSC"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink5URL"; Value = "https://datasheet.octopart.com:443/TPS6285020MDRLR-Texas-Instruments-datasheet-190364767.pdf?src-supplier=LCSC"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink6Description"; Value = "http://sigma.octopart.com:80/reach_statement/Texas-Instruments-company-64.pdf?src-supplier=Compliance+Statements"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink6URL"; Value = "http://sigma.octopart.com:80/reach_statement/Texas-Instruments-company-64.pdf?src-supplier=Compliance+Statements"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink7Description"; Value = "http://sigma.octopart.com:80/conflict_mineral_statement/Texas-Instruments-company-63.pdf?src-supplier=Compliance+Statements"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink7URL"; Value = "http://sigma.octopart.com:80/conflict_mineral_statement/Texas-Instruments-company-63.pdf?src-supplier=Compliance+Statements"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Height"; Value = "0m"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Length"; Value = "2.1mm"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Lifecycle Status"; Value = "Production"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer"; Value = "Texas Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer Lifecycle Status"; Value = "ACTIVE"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer Part Number"; Value = "TPS6285020MDRLR"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Pins"; Value = "8"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Pricing"; Value = "1=1.52, 10=1.11, 25=1.0072, 100=0.8944, 250=0.8406, 500=0.80822, 1000=0.78154 (USD)"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "RoHS"; Value = "Compliant"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Stock"; Value = "2434"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Supplier"; Value = "DigiKey"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Supplier Part Number"; Value = "296-TPS6285020MDRLRCT-ND"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Thickness"; Value = "550µm"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Topology"; Value = "Buck"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Width"; Value = "1.2mm"; VariantName = "[No Variations]"
+Add Pin To Net: Unknown Pin: Pin SW1-1
+Add Pin To Net: Unknown Pin: Pin SW1-2
+Add Pin To Net: Unknown Pin: Pin SW1-3
+Added Pin To Net: NetName=5V_IN Pin=U5-1
+Added Pin To Net: NetName=5V_IN Pin=U5-2
+Added Pin To Net: NetName=NetR17_2 Pin=U5-3
+Added Pin To Net: NetName=NetR19_1 Pin=U5-4
+Added Pin To Net: NetName=1V2_FB Pin=U5-5
+Added Pin To Net: NetName=SW2 Pin=U5-7
+Added Pin To Net: NetName=GND Pin=U5-8
+Added Pin To Net: NetName=5V_IN Pin=U6-1
+Added Pin To Net: NetName=5V_IN Pin=U6-2
+Added Pin To Net: NetName=NetR20_2 Pin=U6-3
+Added Pin To Net: NetName=NetR22_1 Pin=U6-4
+Added Pin To Net: NetName=1V8_FB Pin=U6-5
+Added Pin To Net: NetName=SW3 Pin=U6-7
+Added Pin To Net: NetName=GND Pin=U6-8
+Add Pin To Net: Unknown Pin: Pin Y1-1
+Add Pin To Net: Unknown Pin: Pin Y1-2
+Add Pin To Net: Unknown Pin: Pin Y1-3
+Add Pin To Net: Unknown Pin: Pin Y1-4
+Add Class Member: Failed to add class member : Component SW1 AYZ0102AGRLC
+Added Member To Class: ClassName=DC_Regulator Member=Component U5 TPS6285020ADRLR
+Added Member To Class: ClassName=DC_Regulator Member=Component U6 TPS6285020MDRLR
+Add Class Member: Failed to add class member : Component Y1 XRCGB40M000F1S2GR0
