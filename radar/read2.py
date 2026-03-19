@@ -1,4 +1,6 @@
 import onnxruntime as ort
+import sys
+import pandas as pd
 from collections import deque
 import serial
 import threading
@@ -11,6 +13,7 @@ q: queue.Queue = queue.Queue(1)
 
 MINIMUM_POINTS = 5
 
+RECORD_MODE = True
 
 # returns the baud rate the config is using
 def send_cfg(cfg_path: str, cli_baud_rate: int, cli_port: str, data_port: str):
@@ -106,10 +109,12 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                     "accz": 0,
                     # later we will put the heatmap here
                     "list_of_points": [],  # this is a list of dictionaries with pointx, pointy, pointz and snr
+                    "heatmap": [],
                 }
 
                 found_points = False
                 found_target = False
+                found_heatmap = False
 
                 # print(f"num tlvs is {num_tlvs}")
 
@@ -123,11 +128,12 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                     tlv_data = buffer[tlv_offset + 8 : tlv_offset + 8 + tlv_length]
                     tlv_offset += tlv_length + 8
 
-                    # print(f"TLV TYPE: {tlv_type} is {tlv_length} bytes long.")
+                    #print(f"TLV TYPE: {tlv_type} is {tlv_length} bytes long.")
 
                     MMWDEMO_OUTPUT_EXT_MSG_DETECTED_POINTS = 301
                     MMWDEMO_OUTPUT_EXT_MSG_TARGET_LIST = 308
                     MMWDEMO_OUTPUT_EXT_MSG_TARGET_INDEX = 309
+                    MMWDEMO_OUTPUT_EXT_MSG_RANGE_AZIMUTH_HEAT_MAP_MAJOR = 304
 
                     i = 1
 
@@ -198,6 +204,17 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
                             i += 1
                             pass
+                    elif tlv_type == MMWDEMO_OUTPUT_EXT_MSG_RANGE_AZIMUTH_HEAT_MAP_MAJOR:
+                        num_range_bins = 32
+                        num_azimuth_bins = 32
+                        expected_size = num_range_bins * num_azimuth_bins * 4
+
+                        heatmap_1d = np.frombuffer(tlv_data[:expected_size], dtype=np.uint32)
+                        heatmap_2d = heatmap_1d.reshape(num_range_bins, num_azimuth_bins)
+
+                        found_heatmap = True
+                        frame["heatmap"] = heatmap_2d
+
                     elif tlv_type == MMWDEMO_OUTPUT_EXT_MSG_TARGET_LIST:
                         found_target = True
                         vals = struct.unpack("<I9f", tlv_data[:40])
@@ -223,7 +240,7 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                     elif tlv_type == 1031:
                         print("1031 found")
 
-                if found_target and found_points:
+                if found_target and found_points and found_heatmap:
                     try:
                         q.put(frame, block=False)
                         # print("put in queue")
@@ -257,11 +274,7 @@ def process(data_dict):
 
     raw_points.sort(key=lambda x: x[1])
 
-    # if len(raw_points) >= 5:
-    #    selected = raw_points[-3:] + raw_points[:2]
-    # else:
-    #     print("ELSE")
-    #    selected = raw_points + [[0.0, 0.0, 0.0]] * (5 - len(raw_points))
+
     selected = raw_points[-5:]
     if len(selected) < 5:
         selected = selected + [[0.0, 0.0, 0.0]] * (5 - len(selected))
@@ -274,7 +287,10 @@ def process(data_dict):
 
     flat_points = [val for pt in selected for val in pt]
 
-    return base_features + flat_points
+    heatmap = data_dict.get("heatmap")
+    heatmap_list = [heatmap.flatten().tolist()]
+
+    return base_features + flat_points + heatmap_list
 
 
 def predict(status_out_queue: queue.Queue | None = None):
@@ -289,29 +305,61 @@ def predict(status_out_queue: queue.Queue | None = None):
     class_data = {0: "STANDING", 1: "SITTING", 2: "LYING", 3: "FALLING", 4: "WALKING"}
     class_predicted = 0
 
-    while True:
-        raw_data = q.get()
-        processed_row = process(raw_data)
-        window.append(processed_row)
+    columns = [
+        'posz', 'velx', 'vely', 'velz', 'accx', 'accy', 'accz',
+        'p1x', 'p1y', 'p1z', 'p2x', 'p2y', 'p2z', 'p3x', 'p3y', 'p3z',
+        'p4x', 'p4y', 'p4z', 'p5x', 'p5y', 'p5z', 'heatmap'
+    ]
 
-        X = np.array(window).T.flatten().astype(np.float32)
+    frames = []
 
-        result = infer(X)
+    i = 0
+    try: 
+        while True: 
+            raw_data = q.get()
+            processed_row = process(raw_data)
 
-        if class_predicted == 3:
-            if result == 4:
+            if RECORD_MODE:
+                frames.append(processed_row)
+                print(f"frame saved {i}")
+                i += 1
+                continue
+
+            if (len(processed_row) != len(columns)):
+                print("NOT THE SAME")
+
+            # this is 0:-1 for now because i haven't yet trained the model w the heatmap.
+            window.append(processed_row[0:-1])
+
+            X = np.array(window).T.flatten().astype(np.float32)
+
+            result = infer(X)
+
+            if class_predicted == 3:
+                if result == 4:
+                    class_predicted = result
+            else:
                 class_predicted = result
-        else:
-            class_predicted = result
 
-        status_label = class_data[int(class_predicted)]
-        print(f"Status: {status_label}")
-        if status_out_queue is not None:
-            try:
-                status_out_queue.put(status_label, block=False)
-            except queue.Full:
-                pass
+            status_label = class_data[int(class_predicted)]
+            print(f"Status: {status_label}")
+            if status_out_queue is not None:
+                try:
+                    status_out_queue.put(status_label, block=False)
+                except queue.Full:
+                    pass
 
+    except KeyboardInterrupt:
+        '''
+        I do not really like this and I will fix it later, but it is an easy way just to get some sample data so I
+        can test the model code.
+        '''
+
+        if RECORD_MODE:
+            print("csv saved")
+            big_df = pd.DataFrame(frames, columns=columns)
+            big_df.to_csv("data/classes/SITTING/frames.csv", index=False)
+            sys.exit(1)
 
 def main():
     cli_port = "/dev/ttyACM0"
@@ -322,13 +370,11 @@ def main():
 
     send_cfg("config.cfg", cli_baud_rate, cli_port, data_port)
     pt = threading.Thread(target=start_p, name="read uart", daemon=True)
-    ct = threading.Thread(target=predict, name="predict data", daemon=True)
-
     pt.start()
-    ct.start()
+
+    predict()
 
     pt.join()
-    ct.join()
 
 
 # device = "cuda" if torch.cuda.is_available() else "cpu"

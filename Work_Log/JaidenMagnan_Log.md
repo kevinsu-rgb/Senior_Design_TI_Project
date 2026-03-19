@@ -21,4 +21,6 @@
 - Modify Pedhrom's (from TI) to handle Point Cloud data in our model (3 hours.)
 - Edit Python script to process data the same as model (5 hours.)
 - Connect read2 script to GUI (3 hours.)
+### 3/07->3/16 Total 60 hours:
+- Add heatmap data to our machine learning model (8 hours.)
 
