@@ -1,0 +1,8 @@
+Removed Pin From Net: NetName=NetJ1_15 Pin=R1-2
+Removed Pin From Net: NetName=NetJ1_15 Pin=R30-1
+Removed Pin From Net: NetName=NetJ1_7 Pin=U1-G3
+Change Component Description : Designator=J1 Old Description=Extra-Tall Smt Gpio Header For Raspberry Pi Hat - 2X20 Extra Tall Female Header New Description=Extra-Tall Smt Gpio Header For Raspberry Pi Hat - 2X20 Extra Tall Female Header |Adafruit 2714
+Added Pin To Net: NetName=NetJ1_7 Pin=R1-2
+Added Pin To Net: NetName=NetJ1_7 Pin=R30-1
+Added Pin To Net: NetName=NetJ1_15 Pin=U1-G3
+Added Member To Class: ClassName=AOPIO Member=Component J2 1050170001
