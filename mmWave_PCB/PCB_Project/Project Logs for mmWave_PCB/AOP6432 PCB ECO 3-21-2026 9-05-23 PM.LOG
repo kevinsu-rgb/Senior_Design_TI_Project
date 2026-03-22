@@ -1,0 +1,21 @@
+Change Component Description : Designator=U2 Old Description=1.6-V to 5.5-V, 40-mâ„ New Description=1.6-V to 5.5-V, 40-mâ„|, 2.5-A, low-IQ, priority power multiplexer ; 8-SOT-5X3 -40 to 125
+Change Component Description : Designator=J1 Old Description=Extra-Tall Smt Gpio Header For Raspberry Pi Hat - 2X20 Extra Tall Female Header New Description=Extra-Tall Smt Gpio Header For Raspberry Pi Hat - 2X20 Extra Tall Female Header |Adafruit 2714
+Added Component: Designator=J2(MOLEX_1050170001)
+Add component (AddParameter): Name = "Check_prices"; Value = "https://www.snapeda.com/parts/1050170001/Molex/view-part/?ref=eda"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "MF"; Value = "Molex"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "MP"; Value = "1050170001"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Package"; Value = "None"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "SnapEDA_Link"; Value = "https://www.snapeda.com/parts/1050170001/Molex/view-part/?ref=snap"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Value"; Value = ""; VariantName = "[No Variations]"
+Added Pin To Net: NetName=USB_VBUS Pin=J2-1
+Added Pin To Net: NetName=NetJ2_2 Pin=J2-2
+Added Pin To Net: NetName=NetJ2_3 Pin=J2-3
+Added Pin To Net: NetName=NetJ2_4 Pin=J2-4
+Added Pin To Net: NetName=GND Pin=J2-5
+Added Pin To Net: NetName=GND Pin=J2-SH1
+Added Pin To Net: NetName=GND Pin=J2-SH2
+Added Pin To Net: NetName=GND Pin=J2-SH3
+Added Pin To Net: NetName=GND Pin=J2-SH4
+Added Pin To Net: NetName=GND Pin=J2-SH5
+Added Pin To Net: NetName=GND Pin=J2-SH6
+Added Member To Class: ClassName=AOPIO Member=Component J2 1050170001
