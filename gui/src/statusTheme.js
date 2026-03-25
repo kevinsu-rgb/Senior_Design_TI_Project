@@ -41,6 +41,13 @@ const STATUS_THEME = {
     badgeBg: "bg-neutral-600",
     statusText: "text-yellow-400",
   },
+  offline: {
+    label: "Offline",
+    cardBg: "bg-neutral-900/50",
+    cardBorder: "border-neutral-700",
+    badgeBg: "bg-neutral-700",
+    statusText: "text-red-400",
+  },
 };
 
 export function getStatusTheme(rawStatus) {
