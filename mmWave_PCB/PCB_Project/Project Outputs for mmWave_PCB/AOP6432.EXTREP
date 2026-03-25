@@ -1,20 +1,36 @@
 ------------------------------------------------------------------------------------------
-Gerber File Extension Report For: AOP6432.GBR   3/25/2026  10:25:40 AM
+Gerber File Extension Report For: AOP6432.GBR   3/25/2026  10:29:16 AM
 ------------------------------------------------------------------------------------------
 
 
 ------------------------------------------------------------------------------------------
 Layer Extension     Layer Description                      
 ------------------------------------------------------------------------------------------
-.GTO                Top Overlay                             
-.GTP                Top Paste                               
-.GTS                Top Solder                              
-.GTL                Top Layer                               
-.G1                 Layer 1                                 
-.G2                 Layer 2                                 
-.GBL                Bottom Layer                            
-.GBS                Bottom Solder                           
-.GBP                Bottom Paste                            
-.GBO                Bottom Overlay                          
-.GM                 Profile                                 
+.gbr                Top Overlay                             
+.gbr                Top Paste                               
+.gbr                Top Solder                              
+.gbr                Top Layer                               
+.gbr                Layer 1                                 
+.gbr                Layer 2                                 
+.gbr                Bottom Layer                            
+.gbr                Bottom Solder                           
+.gbr                Bottom Paste                            
+.gbr                Bottom Overlay                          
+.gbr                Mechanical 1                            
+.gbr                Mechanical 2                            
+.gbr                Top Assembly                            
+.gbr                Mechanical 12                           
+.gbr                Top 3D Body                             
+.gbr                Top Courtyard                           
+.gbr                Top Component Center                    
+.gbr                Bottom Assembly                         
+.gbr                Bottom Courtyard                        
+.gbr                Bottom 3D Body                          
+.gbr                Bottom Component Center                 
+.gbr                Keep-Out Layer                          
+.gbr                Top Pad Master                          
+.gbr                Bottom Pad Master                       
+.gbr                Drill Drawing                           
+.gbr                Drill Guide                             
+.gbr                Profile                                 
 ------------------------------------------------------------------------------------------
