@@ -29,3 +29,13 @@
 
 > * [x] Work to get point cloud and heatmap working with the model simultaneously **(6 hours)**
 > * [x] Meet with team to figure out point cloud data reading **(3 hours)**
+
+## Work of 3/1 - 3/8
+
+> * [x] Make tcp server on Pi and discovery on host machine **(4 hours)**
+> * [x] Integrate radar packets and debug **(10 hours)**
+
+## Work of 3/22 - 3/29
+
+> * [x] Add disconnect logic and ui updates, uptime, offline status **(4 hours)**
+
