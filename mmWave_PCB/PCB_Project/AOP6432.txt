@@ -1,12 +1,12 @@
 Board Information Report
 Filename     : C:\Users\kevin\K_Documents\CEN4908C\Senior_Design_TI_Project\mmWave_PCB\PCB_Project\AOP6432.PcbDoc
-Date         : 3/24/2026
-Time         : 10:10:12 PM
+Date         : 3/25/2026
+Time         : 7:58:57 AM
 Time Elapsed : 00:00:00
 
 Routing Information
-    Routing completion, 98.38%
+    Routing completion, 99.03%
     Connections, 308
-    Connections routed, 303
-    Connections remaining, 5
+    Connections routed, 305
+    Connections remaining, 3
 count : 4
