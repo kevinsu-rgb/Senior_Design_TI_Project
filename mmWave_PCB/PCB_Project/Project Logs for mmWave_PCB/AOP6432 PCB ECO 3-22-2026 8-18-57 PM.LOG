@@ -1,0 +1,30 @@
+Change Component Description : Designator=U2 Old Description=1.6-V to 5.5-V, 40-mâ„ New Description=1.6-V to 5.5-V, 40-mâ„|, 2.5-A, low-IQ, priority power multiplexer ; 8-SOT-5X3 -40 to 125
+Added Component: Designator=J1(2714)
+Add component (AddParameter): Name = "Category"; Value = "Headers and Wire Housings"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer"; Value = "Adafruit Industries"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer Part Number"; Value = "2714"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Pricing"; Value = "1=2.95 (USD)"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "RoHS"; Value = "Non-Compliant"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Schedule B"; Value = "8536694040, 8536694040|8536694040|8536694040|8536694040|8536694040"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Stock"; Value = "1"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Supplier"; Value = "Arrow Electronics"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Supplier Part Number"; Value = "2714"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=5V_REG Pin=J1-2
+Added Pin To Net: NetName=NetJ1_3 Pin=J1-3
+Added Pin To Net: NetName=NetJ1_5 Pin=J1-5
+Added Pin To Net: NetName=NetJ1_7 Pin=J1-7
+Added Pin To Net: NetName=NetJ1_8 Pin=J1-8
+Added Pin To Net: NetName=NetJ1_10 Pin=J1-10
+Added Pin To Net: NetName=NetJ1_11 Pin=J1-11
+Added Pin To Net: NetName=NetJ1_12 Pin=J1-12
+Added Pin To Net: NetName=NetJ1_13 Pin=J1-13
+Added Pin To Net: NetName=GND Pin=J1-14
+Added Pin To Net: NetName=NetJ1_15 Pin=J1-15
+Added Pin To Net: NetName=NetJ1_16 Pin=J1-16
+Added Pin To Net: NetName=NetJ1_18 Pin=J1-18
+Added Pin To Net: NetName=NetJ1_19 Pin=J1-19
+Added Pin To Net: NetName=GND Pin=J1-20
+Added Pin To Net: NetName=NetJ1_21 Pin=J1-21
+Added Pin To Net: NetName=NetJ1_23 Pin=J1-23
+Added Pin To Net: NetName=NetJ1_24 Pin=J1-24
+Added Member To Class: ClassName=IO Member=Component J1 2714
