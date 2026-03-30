@@ -15,6 +15,19 @@ MINIMUM_POINTS = 5
 
 RECORD_MODE = True
 
+pressed = False
+
+def r_input():
+    global pressed
+    while True:
+        if pressed:
+            r = input("press r to stop recording")
+        else:
+            r = input("press r to start recording")
+
+        if r == "r":
+            pressed = not pressed
+
 # returns the baud rate the config is using
 def send_cfg(cfg_path: str, cli_baud_rate: int, cli_port: str, data_port: str):
     cli = serial.Serial(cli_port, cli_baud_rate, timeout=1)
@@ -295,6 +308,7 @@ def process(data_dict):
 
 def predict(status_out_queue: queue.Queue | None = None):
     global q
+    global pressed
     WINDOW_SIZE = 8
     FEATURE_COUNT = 22
     window = deque(maxlen=WINDOW_SIZE)
@@ -319,10 +333,12 @@ def predict(status_out_queue: queue.Queue | None = None):
             raw_data = q.get()
             processed_row = process(raw_data)
 
-            if RECORD_MODE:
+            if RECORD_MODE and pressed:
                 frames.append(processed_row)
                 print(f"frame saved {i}")
                 i += 1
+                continue
+            elif RECORD_MODE:
                 continue
 
             if (len(processed_row) != len(columns)):
@@ -369,8 +385,12 @@ def main():
     start_p = lambda: read_uart("", data_port, 1250000)
 
     send_cfg("config.cfg", cli_baud_rate, cli_port, data_port)
+
     pt = threading.Thread(target=start_p, name="read uart", daemon=True)
+    lt = threading.Thread(target=r_input, name="read input")
+
     pt.start()
+    lt.start()
 
     predict()
 
