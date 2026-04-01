@@ -15,6 +15,72 @@ MINIMUM_POINTS = 5
 
 RECORD_MODE = True
 
+pressed = False
+
+frames = []
+frame_count = 0;
+
+import tkinter as tk
+def launch_recorder_ui():
+    global pressed
+
+    root = tk.Tk()
+    root.title("Radar Recorder")
+    root.geometry("220x140")
+    root.resizable(False, False)
+
+    def toggle():
+        global pressed
+        pressed = not pressed
+        if pressed:
+            btn.config(text="stop recording", bg="#e74c3c", fg="white")
+            status.config(text="recording...", fg="#e74c3c")
+        else:
+            btn.config(text="start recording", bg="#2ecc71", fg="white")
+            status.config(text="idle", fg="#7f8c8d")
+
+    def save():
+        global frames
+        global frame_count
+        # import here or at top of file
+        if len(frames) > 0:
+            columns = [
+                'posz', 'velx', 'vely', 'velz', 'accx', 'accy', 'accz',
+                'p1x', 'p1y', 'p1z', 'p2x', 'p2y', 'p2z', 'p3x', 'p3y', 'p3z',
+                'p4x', 'p4y', 'p4z', 'p5x', 'p5y', 'p5z', 'heatmap'
+            ]
+            big_df = pd.DataFrame(frames, columns=columns)
+            big_df.to_csv(f"data/classes/SITTING/frames{frame_count}.csv", index=False)
+            status.config(text=f"Saved {len(frames)} frames!", fg="#2980b9")
+            print(f"Saved {len(frames)} frames to csv")
+            frames = []
+            frame_count += 1
+        else:
+            status.config(text="Nothing to save.", fg="#e67e22")
+
+    status = tk.Label(root, text="Idle", fg="#7f8c8d", font=("Arial", 11))
+    status.pack(pady=(12, 4))
+
+    btn = tk.Button(
+        root, text="start recording",
+        bg="#2ecc71", fg="white",
+        font=("Arial", 11, "bold"),
+        relief="flat", padx=12, pady=6,
+        command=toggle
+    )
+    btn.pack(pady=4)
+
+    save_btn = tk.Button(
+        root, text="save csv",
+        bg="#3498db", fg="white",
+        font=("Arial", 11, "bold"),
+        relief="flat", padx=12, pady=6,
+        command=save
+    )
+    save_btn.pack(pady=4)
+
+    root.mainloop()
+
 # returns the baud rate the config is using
 def send_cfg(cfg_path: str, cli_baud_rate: int, cli_port: str, data_port: str):
     cli = serial.Serial(cli_port, cli_baud_rate, timeout=1)
@@ -295,6 +361,8 @@ def process(data_dict):
 
 def predict(status_out_queue: queue.Queue | None = None):
     global q
+    global pressed
+    global frames
     WINDOW_SIZE = 8
     FEATURE_COUNT = 22
     window = deque(maxlen=WINDOW_SIZE)
@@ -311,55 +379,42 @@ def predict(status_out_queue: queue.Queue | None = None):
         'p4x', 'p4y', 'p4z', 'p5x', 'p5y', 'p5z', 'heatmap'
     ]
 
-    frames = []
-
     i = 0
-    try: 
-        while True: 
-            raw_data = q.get()
-            processed_row = process(raw_data)
+    while True: 
+        raw_data = q.get()
+        processed_row = process(raw_data)
 
-            if RECORD_MODE:
-                frames.append(processed_row)
-                print(f"frame saved {i}")
-                i += 1
-                continue
+        if RECORD_MODE and pressed:
+            frames.append(processed_row)
+            print(f"frame saved {i}")
+            i += 1
+            continue
+        elif RECORD_MODE:
+            continue
 
-            if (len(processed_row) != len(columns)):
-                print("NOT THE SAME")
+        if (len(processed_row) != len(columns)):
+            print("NOT THE SAME")
 
-            # this is 0:-1 for now because i haven't yet trained the model w the heatmap.
-            window.append(processed_row[0:-1])
+        # this is 0:-1 for now because i haven't yet trained the model w the heatmap.
+        window.append(processed_row[0:-1])
 
-            X = np.array(window).T.flatten().astype(np.float32)
+        X = np.array(window).T.flatten().astype(np.float32)
 
-            result = infer(X)
+        result = infer(X)
 
-            if class_predicted == 3:
-                if result == 4:
-                    class_predicted = result
-            else:
+        if class_predicted == 3:
+            if result == 4:
                 class_predicted = result
+        else:
+            class_predicted = result
 
-            status_label = class_data[int(class_predicted)]
-            print(f"Status: {status_label}")
-            if status_out_queue is not None:
-                try:
-                    status_out_queue.put(status_label, block=False)
-                except queue.Full:
-                    pass
-
-    except KeyboardInterrupt:
-        '''
-        I do not really like this and I will fix it later, but it is an easy way just to get some sample data so I
-        can test the model code.
-        '''
-
-        if RECORD_MODE:
-            print("csv saved")
-            big_df = pd.DataFrame(frames, columns=columns)
-            big_df.to_csv("data/classes/SITTING/frames.csv", index=False)
-            sys.exit(1)
+        status_label = class_data[int(class_predicted)]
+        print(f"Status: {status_label}")
+        if status_out_queue is not None:
+            try:
+                status_out_queue.put(status_label, block=False)
+            except queue.Full:
+                pass
 
 def main():
     cli_port = "/dev/ttyACM0"
@@ -369,10 +424,18 @@ def main():
     start_p = lambda: read_uart("", data_port, 1250000)
 
     send_cfg("config.cfg", cli_baud_rate, cli_port, data_port)
-    pt = threading.Thread(target=start_p, name="read uart", daemon=True)
-    pt.start()
 
-    predict()
+
+    pt = threading.Thread(target=start_p, name="read uart", daemon=True)
+    ct = threading.Thread(target=predict, name="predict", daemon=True)
+
+    pt.start()
+    ct.start()
+
+    if RECORD_MODE:
+        launch_recorder_ui()
+    else:
+        ct.join()
 
     pt.join()
 

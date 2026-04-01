@@ -23,4 +23,7 @@
 - Connect read2 script to GUI (3 hours.)
 ### 3/07->3/16 Total 60 hours:
 - Add heatmap data to our machine learning model (8 hours.)
+### 3/24->4/1 Total 68 hours:
+- Work on final report (4 hours.)
+- Visualize machine learning data (4 hours.)
 

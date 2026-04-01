@@ -9,6 +9,7 @@ export default function RadarPage() {
 	const location = useLocation();
 	const radarId = location.state?.radarId;
 	const radar = useGetRadarById(radarId);
+	const radarIp = location.state?.radarIp;
 	const { clearRadarFault } = useRadar();
 
 	return (
@@ -17,7 +18,7 @@ export default function RadarPage() {
 				<BackButton onBack={() => navigate(-1)} />
 				<button
 					type="button"
-					onClick={() => clearRadarFault?.(radarId)}
+					onClick={() => clearRadarFault?.(radarIp)}
 					disabled={!radar?.fault_latched}
 					className={`px-4 py-2 rounded-md text-white font-medium transition ${
 						radar?.fault_latched
