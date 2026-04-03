@@ -26,4 +26,7 @@
 ### 3/24->4/1 Total 68 hours:
 - Work on final report (4 hours.)
 - Visualize machine learning data (4 hours.)
+### 4/2->4/9 Total 80 hours:
+- Integrate heatmap with read2.py (6 hours.)
+- Debug and fix heatmap parsing in ml model (6 hours.)
 
