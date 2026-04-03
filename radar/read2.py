@@ -18,7 +18,7 @@ RECORD_MODE = True
 pressed = False
 
 frames = []
-frame_count = 0;
+frame_count = 1;
 
 import tkinter as tk
 def launch_recorder_ui():
@@ -50,9 +50,9 @@ def launch_recorder_ui():
                 'p4x', 'p4y', 'p4z', 'p5x', 'p5y', 'p5z', 'heatmap'
             ]
             big_df = pd.DataFrame(frames, columns=columns)
-            big_df.to_csv(f"data/classes/SITTING/frames{frame_count}.csv", index=False)
+            big_df.to_csv(f"data/classes/FALLING/frames{frame_count}.csv", index=False)
             status.config(text=f"Saved {len(frames)} frames!", fg="#2980b9")
-            print(f"Saved {len(frames)} frames to csv")
+            print(f"Saved {len(frames)} frames to cs1v")
             frames = []
             frame_count += 1
         else:
@@ -316,9 +316,16 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
                 buffer = buffer[total_packet_len:]
 
 
-def infer(X):
-    input_tensor = np.array(X, dtype=np.float32).reshape(1, -1)
-    outputs = ort_session.run(None, {"input": input_tensor})
+def infer(X_pc, X_hm):
+    input_pc = np.array(X_pc, dtype=np.float32).reshape(1, -1)
+    
+    input_hm = np.array(X_hm, dtype=np.float32).reshape(1, 1, 8, 32, 32)
+    
+    outputs = ort_session.run(None, {
+        "input_pc": input_pc, 
+        "input_heatmap": input_hm
+    })
+    
     return np.argmax(outputs[0], axis=1)[0]
 
 
@@ -395,12 +402,16 @@ def predict(status_out_queue: queue.Queue | None = None):
         if (len(processed_row) != len(columns)):
             print("NOT THE SAME")
 
-        # this is 0:-1 for now because i haven't yet trained the model w the heatmap.
-        window.append(processed_row[0:-1])
+        window.append(processed_row)
 
-        X = np.array(window).T.flatten().astype(np.float32)
+        if len(window) != WINDOW_SIZE:
+            continue
 
-        result = infer(X)
+        pc_list = [f[:22] for f in window]
+        X_pc = np.array(pc_list, dtype=np.float32).T.flatten().reshape(1, -1)
+
+        # TODO: add the heatmap to the input
+        
 
         if class_predicted == 3:
             if result == 4:
