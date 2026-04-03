@@ -1,6 +1,4 @@
-from torch import nn
-import torch
-
+import torch.nn as nn
 class NeuralNetwork(nn.Module):
     '''
     This is modified to have two branches...
@@ -39,21 +37,15 @@ class NeuralNetwork(nn.Module):
         )
 
     def forward(self, xp, xh):
-        out_p = self.pc_branch(xp) # Shape: [Batch, 32]
+        xp = xp.view(xp.size(0), -1)
+        out_p = self.pc_branch(xp)
 
-        # xh_shape: (BATCH_SIZE, 1, WINDOW_SIZE, 32, 32)
-        # Reshape xh to treat each heatmap in the window as a separate item for Conv2d
         batch_size, channels, window_size, h, w = xh.shape
-        xh_reshaped = xh.view(batch_size * window_size, channels, h, w) # Shape: (B*W, 1, 32, 32)
+        xh_reshaped = xh.view(batch_size * window_size, channels, h, w)
+        out_h_per_frame = self.conv_layers(xh_reshaped)
+        out_h = out_h_per_frame.view(batch_size, window_size, -1)
 
-        out_h_per_frame = self.conv_layers(xh_reshaped) # Shape: (B*W, 512)
-
-        # Aggregate the features from each frame in the window
-        out_h = out_h_per_frame.view(batch_size, window_size, -1) # Shape: (B, W, 512)
-        out_h = torch.mean(out_h, dim=1) # Aggregate by taking mean across window_size dimension. Shape: (B, 512)
+        out_h = torch.mean(out_h, dim=1)
 
         combined = torch.cat((out_p, out_h), dim=1)
-
-        out = self.fusion_head(combined)
-
-        return torch.softmax(out, dim=1)
+        return self.fusion_head(combined)

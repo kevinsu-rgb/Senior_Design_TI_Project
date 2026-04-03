@@ -13,7 +13,7 @@ q: queue.Queue = queue.Queue(1)
 
 MINIMUM_POINTS = 5
 
-RECORD_MODE = True
+RECORD_MODE = False
 
 pressed = False
 
@@ -317,13 +317,12 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
 
 def infer(X_pc, X_hm):
-    input_pc = np.array(X_pc, dtype=np.float32).reshape(1, -1)
-    
-    input_hm = np.array(X_hm, dtype=np.float32).reshape(1, 1, 8, 32, 32)
+    #input_pc = np.array(X_pc, dtype=np.float32).reshape(1, -1)
+    #input_hm = np.array(X_hm, dtype=np.float32).reshape(1, 1, 8, 32, 32)
     
     outputs = ort_session.run(None, {
-        "input_pc": input_pc, 
-        "input_heatmap": input_hm
+        "point_cloud_input": X_pc, 
+        "heatmap_input": X_hm
     })
     
     return np.argmax(outputs[0], axis=1)[0]
@@ -374,11 +373,11 @@ def predict(status_out_queue: queue.Queue | None = None):
     FEATURE_COUNT = 22
     window = deque(maxlen=WINDOW_SIZE)
 
-    for _ in range(WINDOW_SIZE):
-        window.append(np.zeros(FEATURE_COUNT))
+    #for _ in range(WINDOW_SIZE):
+    #    window.append(np.zeros(FEATURE_COUNT))
 
-    class_data = {0: "STANDING", 1: "SITTING", 2: "LYING", 3: "FALLING", 4: "WALKING"}
-    class_predicted = 0
+    class_data = {0: 'SITTING', 1: 'FALLING', 2: 'WALKING'}
+    #class_predicted = 0
 
     columns = [
         'posz', 'velx', 'vely', 'velz', 'accx', 'accy', 'accz',
@@ -399,27 +398,21 @@ def predict(status_out_queue: queue.Queue | None = None):
         elif RECORD_MODE:
             continue
 
-        if (len(processed_row) != len(columns)):
-            print("NOT THE SAME")
-
         window.append(processed_row)
 
-        if len(window) != WINDOW_SIZE:
+        if len(window) < WINDOW_SIZE:
             continue
 
         pc_list = [f[:22] for f in window]
-        X_pc = np.array(pc_list, dtype=np.float32).T.flatten().reshape(1, -1)
+        hm_list = [f[-1] for f in window]
 
-        # TODO: add the heatmap to the input
-        
+        X_pc = np.array(pc_list, dtype=np.float32).reshape(1, 8, 22)
+        X_hm = np.array(hm_list, dtype=np.float32).reshape(1, 1, 8, 32, 32)
 
-        if class_predicted == 3:
-            if result == 4:
-                class_predicted = result
-        else:
-            class_predicted = result
+        result = infer(X_pc, X_hm)
 
-        status_label = class_data[int(class_predicted)]
+        status_label = class_data[int(result)]
+
         print(f"Status: {status_label}")
         if status_out_queue is not None:
             try:
@@ -472,7 +465,7 @@ def main():
 # )
 # print("Model exported to model.onnx")
 
-ort_session = ort.InferenceSession("model.onnx")
+ort_session = ort.InferenceSession("model.pth")
 
 if __name__ == "__main__":
     main()
