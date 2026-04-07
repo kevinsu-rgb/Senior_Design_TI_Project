@@ -689,6 +689,11 @@ void mmw_UartWrite (UART_Handle handle,
     UART_write(handle, &trans);
 }
 
+void mmw_SpiWrite (MCSPI_Handle handle,
+                    MCSPI_Transaction *trans)
+{
+    MCSPI_transfer(handle, trans);
+}
 
 void mmwDemo_INAMeasNull(I2C_Handle i2cHandle, uint16_t *ptrPwrMeasured)
 {
@@ -725,6 +730,25 @@ void mmwDemo_TransmitProcessedOutputTask()
 {
     UART_Handle uartHandle = gUartHandle[0];
     I2C_Handle  i2cHandle = gI2cHandle[CONFIG_I2C0];
+
+    // Added MCSPI
+    MCSPI_Handle SPI_Handle;
+    MCSPI_OpenParams openPrms;
+    MCSPI_ChConfig chCfg;
+    MCSPI_Transaction transaction;
+    MCSPI_init(); // Initialize global driver state
+    MCSPI_OpenParams_init(&openPrms);
+    SPI_Handle = MCSPI_open(CONFIG_MCSPI0, &openPrms);
+    MCSPI_ChConfig_init(&chCfg);
+    chCfg.bitRate = 1000000; // 1MHz
+    MCSPI_chConfig(SPI_Handle, &chCfg);
+    MCSPI_Transaction_init(&transaction);
+    transaction.channel = MCSPI_CHANNEL_0;
+    // transaction.count = 2; // Send 2 bytes
+    // transaction.txBuf = myTxData;
+    // transaction.rxBuf = myRxData; // Will be set NULL
+    // MCSPI END
+
     DPC_ObjectDetection_ExecuteResult *result = &gMmwMssMCB.dpcResult;
     //MmwDemo_output_message_stats      *timingInfo
     MmwDemo_output_message_header header;
@@ -1095,6 +1119,9 @@ void mmwDemo_TransmitProcessedOutputTask()
             if(tlvIdx != 0)
             {
                 mmw_UartWrite (uartHandle, (uint8_t*)&header, sizeof(MmwDemo_output_message_header));
+                transaction.count = sizeof(MmwDemo_output_message_header);
+                transaction.txBuf = (uint8_t*)&header;
+                mmw_SpiWrite(SPI_Handle, &transaction);
                 tlvIdx = 0;
             }
 
@@ -1104,10 +1131,16 @@ void mmwDemo_TransmitProcessedOutputTask()
                 mmw_UartWrite (uartHandle,
                                 (uint8_t*)&tl[tlvIdx],
                                 sizeof(MmwDemo_output_message_tl));
+                transaction.count = sizeof(MmwDemo_output_message_tl);
+                transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                mmw_SpiWrite(SPI_Handle, &transaction);
 
                 /*Send array of objects */
                 mmw_UartWrite (uartHandle, (uint8_t*)result->objOut,
                                 sizeof(DPIF_PointCloudCartesian) * result->numObjOut);
+                transaction.count = sizeof(DPIF_PointCloudCartesian) * result->numObjOut;
+                transaction.txBuf = (uint8_t*)result->objOut;
+                mmw_SpiWrite(SPI_Handle, &transaction);
                 tlvIdx++;
             }
 
@@ -1117,10 +1150,16 @@ void mmwDemo_TransmitProcessedOutputTask()
                 mmw_UartWrite (uartHandle,
                                 (uint8_t*)&tl[tlvIdx],
                                 sizeof(MmwDemo_output_message_tl));
+                transaction.count = sizeof(MmwDemo_output_message_tl);
+                transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                mmw_SpiWrite(SPI_Handle, &transaction);
 
                 /*Send array of objects */
                 mmw_UartWrite (uartHandle, (uint8_t*)result->objOutSideInfo,
                                 sizeof(DPIF_PointCloudSideInfo) * result->numObjOut);
+                transaction.count = sizeof(DPIF_PointCloudSideInfo) * result->numObjOut;
+                transaction.txBuf = (uint8_t*)result->objOutSideInfo;
+                mmw_SpiWrite(SPI_Handle, &transaction);
                 tlvIdx++;
             }
 
@@ -1131,6 +1170,9 @@ void mmwDemo_TransmitProcessedOutputTask()
                 gMmwMssMCB.pointCloudToUart.header = tl[tlvIdx];
                 mmw_UartWrite (uartHandle, (uint8_t*)&gMmwMssMCB.pointCloudToUart,
                             sizeof(MmwDemo_output_message_tl) + tl[tlvIdx].length);
+                transaction.count = sizeof(MmwDemo_output_message_tl) + tl[tlvIdx].length;
+                transaction.txBuf = (uint8_t*)&gMmwMssMCB.pointCloudToUart;
+                mmw_SpiWrite(SPI_Handle, &transaction);
                 tlvIdx++;
             }
 
@@ -1142,8 +1184,15 @@ void mmwDemo_TransmitProcessedOutputTask()
                     mmw_UartWrite (uartHandle,
                                     (uint8_t*)&tl[tlvIdx],
                                     sizeof(MmwDemo_output_message_tl));
+                    transaction.count = sizeof(MmwDemo_output_message_tl);
+                    transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                    mmw_SpiWrite(SPI_Handle, &transaction);
+
                     mmw_UartWrite (uartHandle, (uint8_t*)gMmwMssMCB.virtAntElemList,
                                     sizeof(DPU_AoasvcProc_VirtualAntennaElements) * result->numObjOut);
+                    transaction.count = sizeof(DPU_AoasvcProc_VirtualAntennaElements) * result->numObjOut;
+                    transaction.txBuf = (uint8_t*)gMmwMssMCB.virtAntElemList;
+                    mmw_SpiWrite(SPI_Handle, &transaction);
                     tlvIdx++;
                 }
             }
@@ -1154,10 +1203,16 @@ void mmwDemo_TransmitProcessedOutputTask()
                 mmw_UartWrite (uartHandle,
                                 (uint8_t*)&tl[tlvIdx],
                                 sizeof(MmwDemo_output_message_tl));
+                transaction.count = sizeof(MmwDemo_output_message_tl);
+                transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                mmw_SpiWrite(SPI_Handle, &transaction);
 
                 mmw_UartWrite (uartHandle,
                                 (uint8_t*)gMmwMssMCB.rangeProfile[0],
                                 (sizeof(uint32_t)*(mathUtils_pow2roundup(gMmwMssMCB.profileComCfg.h_NumOfAdcSamples)/2)));
+                transaction.count = sizeof(uint32_t)*(mathUtils_pow2roundup(gMmwMssMCB.profileComCfg.h_NumOfAdcSamples)/2);
+                transaction.txBuf = (uint8_t*)gMmwMssMCB.rangeProfile[0];
+                mmw_SpiWrite(SPI_Handle, &transaction);
                 tlvIdx++;
             }
             /* Send Range profile (Minor mode) */
@@ -1166,10 +1221,16 @@ void mmwDemo_TransmitProcessedOutputTask()
                 mmw_UartWrite (uartHandle,
                                 (uint8_t*)&tl[tlvIdx],
                                 sizeof(MmwDemo_output_message_tl));
+                transaction.count = sizeof(MmwDemo_output_message_tl);
+                transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                mmw_SpiWrite(SPI_Handle, &transaction);
 
                 mmw_UartWrite (uartHandle,
                                 (uint8_t*)gMmwMssMCB.rangeProfile[1],
                                 (sizeof(uint32_t)*(mathUtils_pow2roundup(gMmwMssMCB.profileComCfg.h_NumOfAdcSamples)/2)));
+                transaction.count = (sizeof(uint32_t)*(mathUtils_pow2roundup(gMmwMssMCB.profileComCfg.h_NumOfAdcSamples)/2));
+                transaction.txBuf = (uint8_t*)gMmwMssMCB.rangeProfile[1];
+                mmw_SpiWrite(SPI_Handle, &transaction);
                 tlvIdx++;
             }
 
@@ -1179,11 +1240,16 @@ void mmwDemo_TransmitProcessedOutputTask()
                 mmw_UartWrite (uartHandle,
                                 (uint8_t*)&tl[tlvIdx],
                                 sizeof(MmwDemo_output_message_tl));
+                transaction.count = sizeof(MmwDemo_output_message_tl);
+                transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                mmw_SpiWrite(SPI_Handle, &transaction);
 
                 mmw_UartWrite (uartHandle,
                         (uint8_t *) result->rngAzHeatMap[0],
                         (gMmwMssMCB.numRangeBins * gMmwMssMCB.sigProcChainCfg.azimuthFftSize * sizeof(uint32_t)));
-
+                transaction.count = (gMmwMssMCB.numRangeBins * gMmwMssMCB.sigProcChainCfg.azimuthFftSize * sizeof(uint32_t));
+                transaction.txBuf = (uint8_t *) result->rngAzHeatMap[0];
+                mmw_SpiWrite(SPI_Handle, &transaction);
                 tlvIdx++;
             }
             /* Send Range-Azimuth Heatmap (Minor motion) */
@@ -1192,11 +1258,16 @@ void mmwDemo_TransmitProcessedOutputTask()
                 mmw_UartWrite (uartHandle,
                                 (uint8_t*)&tl[tlvIdx],
                                 sizeof(MmwDemo_output_message_tl));
+                transaction.count = sizeof(MmwDemo_output_message_tl);
+                transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                mmw_SpiWrite(SPI_Handle, &transaction);
 
                 mmw_UartWrite (uartHandle,
                         (uint8_t *) result->rngAzHeatMap[1],
                         (gMmwMssMCB.numRangeBins * gMmwMssMCB.sigProcChainCfg.azimuthFftSize * sizeof(uint32_t)));
-
+                transaction.count = (gMmwMssMCB.numRangeBins * gMmwMssMCB.sigProcChainCfg.azimuthFftSize * sizeof(uint32_t));
+                transaction.txBuf = (uint8_t *) result->rngAzHeatMap[1];
+                mmw_SpiWrite(SPI_Handle, &transaction);
                 tlvIdx++;
             }
 
@@ -1206,10 +1277,16 @@ void mmwDemo_TransmitProcessedOutputTask()
                 mmw_UartWrite (uartHandle,
                                 (uint8_t*)&tl[tlvIdx],
                                 sizeof(MmwDemo_output_message_tl));
+                transaction.count = sizeof(MmwDemo_output_message_tl);
+                transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                mmw_SpiWrite(SPI_Handle, &transaction);
 
                 mmw_UartWrite (uartHandle,
                             (uint8_t*) &gMmwMssMCB.outStats,
                             tl[tlvIdx].length);
+                transaction.count = tl[tlvIdx].length;
+                transaction.txBuf = (uint8_t*) &gMmwMssMCB.outStats;
+                mmw_SpiWrite(SPI_Handle, &transaction);
                 tlvIdx++;
             }
 
@@ -1219,10 +1296,16 @@ void mmwDemo_TransmitProcessedOutputTask()
                 mmw_UartWrite (uartHandle,
                                 (uint8_t*)&tl[tlvIdx],
                                 sizeof(MmwDemo_output_message_tl));
+                transaction.count = sizeof(MmwDemo_output_message_tl);
+                transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                mmw_SpiWrite(SPI_Handle, &transaction);
 
                 mmw_UartWrite (uartHandle,
                             (uint8_t*) gMmwMssMCB.dpcZoneState,
                             tl[tlvIdx].length);
+                transaction.count = tl[tlvIdx].length;
+                transaction.txBuf = (uint8_t*) gMmwMssMCB.dpcZoneState;
+                mmw_SpiWrite(SPI_Handle, &transaction);
                 tlvIdx++;
             }
             /* Send ADC samples of last chirp pair in the frame */
@@ -1233,6 +1316,9 @@ void mmwDemo_TransmitProcessedOutputTask()
                 mmw_UartWrite (uartHandle,
                                 (uint8_t*)&tl[tlvIdx],
                                 sizeof(MmwDemo_output_message_tl));
+                transaction.count = sizeof(MmwDemo_output_message_tl);
+                transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                mmw_SpiWrite(SPI_Handle, &transaction);
 
                 if (gMmwMssMCB.numTxAntennas == 2)
                 {
@@ -1242,6 +1328,9 @@ void mmwDemo_TransmitProcessedOutputTask()
                     mmw_UartWrite (uartHandle,
                                 (uint8_t*) CSL_APP_HWA_ADCBUF_RD_U_BASE,
                                 tl[tlvIdx].length/2);
+                    transaction.count = tl[tlvIdx].length/2;
+                    transaction.txBuf = (uint8_t*) CSL_APP_HWA_ADCBUF_RD_U_BASE;
+                    mmw_SpiWrite(SPI_Handle, &transaction);
 
                     /* Set view to ADC pong buffer */
                     CSL_FINS(ptrAdcBufCtrlRegs->ADCBUFCFG1, APP_HWA_ADCBUF_CTRL_ADCBUFCFG1_ADCBUFCFG1_ADCBUFPIPOOVRCNT, 0);
@@ -1249,6 +1338,9 @@ void mmwDemo_TransmitProcessedOutputTask()
                     mmw_UartWrite (uartHandle,
                                 (uint8_t*) CSL_APP_HWA_ADCBUF_RD_U_BASE,
                                 tl[tlvIdx].length/2);
+                    transaction.count = tl[tlvIdx].length/2;
+                    transaction.txBuf = (uint8_t*) CSL_APP_HWA_ADCBUF_RD_U_BASE;
+                    mmw_SpiWrite(SPI_Handle, &transaction);
                 }
                 else
                 {
@@ -1259,6 +1351,9 @@ void mmwDemo_TransmitProcessedOutputTask()
                     mmw_UartWrite (uartHandle,
                                 (uint8_t*) CSL_APP_HWA_ADCBUF_RD_U_BASE,
                                 tl[tlvIdx].length);
+                    transaction.count = tl[tlvIdx].length;
+                    transaction.txBuf = (uint8_t*) CSL_APP_HWA_ADCBUF_RD_U_BASE;
+                    mmw_SpiWrite(SPI_Handle, &transaction);
 
                     /* Set view to ADC pong buffer */
                     CSL_FINS(ptrAdcBufCtrlRegs->ADCBUFCFG1, APP_HWA_ADCBUF_CTRL_ADCBUFCFG1_ADCBUFCFG1_ADCBUFPIPOOVRCNT, 0);
@@ -1276,9 +1371,16 @@ void mmwDemo_TransmitProcessedOutputTask()
                     mmw_UartWrite (uartHandle,
                                     (uint8_t*)&tl[tlvIdx],
                                     sizeof(MmwDemo_output_message_tl));
+                    transaction.count = sizeof(MmwDemo_output_message_tl);
+                    transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                    mmw_SpiWrite(SPI_Handle, &transaction);
+
                     mmw_UartWrite (uartHandle,
                                     (uint8_t*)tList,
                                     tl[tlvIdx].length);
+                    transaction.count = tl[tlvIdx].length;
+                    transaction.txBuf = (uint8_t*)tList;
+                    mmw_SpiWrite(SPI_Handle, &transaction);
                     tlvIdx++;
                 }
                 if ((numIndices > 0) && (numTargets > 0))
@@ -1286,9 +1388,16 @@ void mmwDemo_TransmitProcessedOutputTask()
                     mmw_UartWrite (uartHandle,
                                     (uint8_t*)&tl[tlvIdx],
                                     sizeof(MmwDemo_output_message_tl));
+                    transaction.count = sizeof(MmwDemo_output_message_tl);
+                    transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                    mmw_SpiWrite(SPI_Handle, &transaction);
+
                     mmw_UartWrite (uartHandle,
                                     (uint8_t*)tIndex,
                                     tl[tlvIdx].length);
+                    transaction.count = tl[tlvIdx].length;
+                    transaction.txBuf = (uint8_t*)tIndex;
+                    mmw_SpiWrite(SPI_Handle, &transaction);
                     tlvIdx++;
                 }
             }
@@ -1304,18 +1413,32 @@ void mmwDemo_TransmitProcessedOutputTask()
                         mmw_UartWrite (uartHandle,
                                         (uint8_t*)&tl[tlvIdx],
                                         sizeof(MmwDemo_output_message_tl));
+                        transaction.count = sizeof(MmwDemo_output_message_tl);
+                        transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                        mmw_SpiWrite(SPI_Handle, &transaction);
+
                         mmw_UartWrite (uartHandle,
                                         (uint8_t*)uDopplerData,
                                         tl[tlvIdx].length);
+                        transaction.count = tl[tlvIdx].length;
+                        transaction.txBuf = (uint8_t*)uDopplerData;
+                        mmw_SpiWrite(SPI_Handle, &transaction);
                         tlvIdx++;
 
                         /* Micro Doppler features */
                         mmw_UartWrite (uartHandle,
                                         (uint8_t*)&tl[tlvIdx],
                                         sizeof(MmwDemo_output_message_tl));
+                        transaction.count = sizeof(MmwDemo_output_message_tl);
+                        transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                        mmw_SpiWrite(SPI_Handle, &transaction);
+
                         mmw_UartWrite (uartHandle,
                                         (uint8_t*)uDopplerFeatures,
                                         tl[tlvIdx].length);
+                        transaction.count = tl[tlvIdx].length;
+                        transaction.txBuf = (uint8_t*)uDopplerFeatures;
+                        mmw_SpiWrite(SPI_Handle, &transaction);
                         tlvIdx++;
                     }
                 }
@@ -1332,9 +1455,16 @@ void mmwDemo_TransmitProcessedOutputTask()
                         mmw_UartWrite (uartHandle,
                                         (uint8_t*)&tl[tlvIdx],
                                         sizeof(MmwDemo_output_message_tl));
+                        transaction.count = sizeof(MmwDemo_output_message_tl);
+                        transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                        mmw_SpiWrite(SPI_Handle, &transaction);
+
                         mmw_UartWrite (uartHandle,
                                         (uint8_t*)uClassifierOutput,
                                         tl[tlvIdx].length);
+                        transaction.count = tl[tlvIdx].length;
+                        transaction.txBuf = (uint8_t*)uClassifierOutput;
+                        mmw_SpiWrite(SPI_Handle, &transaction);
                         tlvIdx++;
                     }
                 }
@@ -1348,14 +1478,23 @@ void mmwDemo_TransmitProcessedOutputTask()
                     mmw_UartWrite (uartHandle,
                                         (uint8_t*)&tl[tlvIdx],
                                         sizeof(MmwDemo_output_message_tl));
+                    transaction.count = sizeof(MmwDemo_output_message_tl);
+                    transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                    mmw_SpiWrite(SPI_Handle, &transaction);
 
                     mmw_UartWrite (uartHandle,
                                         (uint8_t*)&gMmwMssMCB.sceneryParams,
                                         sizeof(gMmwMssMCB.sceneryParams));
+                    transaction.count = sizeof(gMmwMssMCB.sceneryParams);
+                    transaction.txBuf = (uint8_t*)&gMmwMssMCB.sceneryParams;
+                    mmw_SpiWrite(SPI_Handle, &transaction);
 
                     mmw_UartWrite (uartHandle,
                                         (uint8_t*)&gIsDefCfgUsed,
                                         sizeof(gIsDefCfgUsed));
+                    transaction.count = sizeof(gIsDefCfgUsed);
+                    transaction.txBuf = (uint8_t*)&gIsDefCfgUsed;
+                    mmw_SpiWrite(SPI_Handle, &transaction);
 
                     tlvIdx++;
                 }
@@ -1364,10 +1503,16 @@ void mmwDemo_TransmitProcessedOutputTask()
                     mmw_UartWrite (uartHandle,
                                         (uint8_t*)&tl[tlvIdx],
                                         sizeof(MmwDemo_output_message_tl));
+                    transaction.count = sizeof(MmwDemo_output_message_tl);
+                    transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                    mmw_SpiWrite(SPI_Handle, &transaction);
 
                     mmw_UartWrite (uartHandle,
                                         (uint8_t*)&gIsDefCfgUsed,
                                         sizeof(gIsDefCfgUsed));
+                    transaction.count = sizeof(gIsDefCfgUsed);
+                    transaction.txBuf = (uint8_t*)&gIsDefCfgUsed;
+                    mmw_SpiWrite(SPI_Handle, &transaction);
                     tlvIdx++;
                 }
             }
@@ -1378,9 +1523,16 @@ void mmwDemo_TransmitProcessedOutputTask()
                 mmw_UartWrite (uartHandle,
                                 (uint8_t*)&tl[tlvIdx],
                                 sizeof(MmwDemo_output_message_tl));
+                transaction.count = sizeof(MmwDemo_output_message_tl);
+                transaction.txBuf = (uint8_t*)&tl[tlvIdx];
+                mmw_SpiWrite(SPI_Handle, &transaction);
+
                 mmw_UartWrite (uartHandle,
                                 (uint8_t*)&gMmwMssMCB.compRxChannelBiasCfgMeasureOut,
                                 tl[tlvIdx].length);
+                transaction.count = tl[tlvIdx].length;
+                transaction.txBuf = (uint8_t*)&gMmwMssMCB.compRxChannelBiasCfgMeasureOut;
+                mmw_SpiWrite(SPI_Handle, &transaction);
                 tlvIdx++;
             }
 
@@ -1391,6 +1543,9 @@ void mmwDemo_TransmitProcessedOutputTask()
                 if (numPaddingBytes < MMWDEMO_OUTPUT_MSG_SEGMENT_LEN)
                 {
                     mmw_UartWrite (uartHandle, (uint8_t*)padding, numPaddingBytes);
+                    transaction.count = numPaddingBytes;
+                    transaction.txBuf = (uint8_t*)padding;
+                    mmw_SpiWrite(SPI_Handle, &transaction);
                 }
             }    
         }

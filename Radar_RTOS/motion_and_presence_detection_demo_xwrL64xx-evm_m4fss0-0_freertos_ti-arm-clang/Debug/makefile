@@ -181,7 +181,7 @@ clean:
 	-@echo ' '
 
 post-build:
-	-$(MAKE) -C C:\ti\MMWAVE_L_SDK_05_05_04_02\examples\mmw_demo\motion_and_presence_detection\xwrL64xx-evm\motion_and_presence_detection_demo_xwrL64xx-evm_m4fss0-0_freertos_ti-arm-clang -f makefile_ccs_bootimage_gen OUTNAME=motion_and_presence_detection_demo_xwrL64xx-evm_m4fss0-0_freertos_ti-arm-clang PROFILE=Debug MCU_PLUS_SDK_PATH=C:/ti/MMWAVE_L_SDK_05_05_04_02 CG_TOOL_ROOT=C:/ti/ti_cgt_tiarmclang_3.2.2.LTS CCS_INSTALL_DIR=C:\ti\ccs2031\ccs\ CCS_IDE_MODE=desktop
+	-$(MAKE) -C C:\Users\kevin\workspace_ccstheia\motion_and_presence_detection_demo_xwrL64xx-evm_m4fss0-0_freertos_ti-arm-clang -f makefile_ccs_bootimage_gen OUTNAME=motion_and_presence_detection_demo_xwrL64xx-evm_m4fss0-0_freertos_ti-arm-clang PROFILE=Debug MCU_PLUS_SDK_PATH=C:/ti/MMWAVE_L_SDK_05_05_04_02 CG_TOOL_ROOT=C:/ti/ti_cgt_tiarmclang_3.2.2.LTS CCS_INSTALL_DIR=C:\ti\ccs2031\ccs\ CCS_IDE_MODE=desktop
 	-@echo ' '
 
 .PHONY: all clean dependents

@@ -1,7 +1,7 @@
 /**
  * These arguments were used when this file was generated. They will be automatically applied on subsequent loads
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
- * @cliArgs --device "XWRL64XX" --package "FCCSP" --part "Default" --context "m4fss0-0" --product "MMWAVE-L-SDK@05.00.00"
+ * @cliArgs --device "XWRL64XX" --package "FCCSP" --part "Default" --context "m4fss0-0" --product "MMWAVE-L-SDK@05.05.04"
  * @versions {"tool":"1.20.0+3587"}
  */
 scripting.excludeFromBuild("ti_cli_mmwave_demo_config.h");
@@ -26,6 +26,8 @@ const hwa        = scripting.addModule("/drivers/hwa/hwa", {}, false);
 const hwa1       = hwa.addInstance();
 const i2c        = scripting.addModule("/drivers/i2c/i2c", {}, false);
 const i2c1       = i2c.addInstance();
+const mcspi      = scripting.addModule("/drivers/mcspi/mcspi", {}, false);
+const mcspi1     = mcspi.addInstance();
 const power      = scripting.addModule("/drivers/power/power", {}, false);
 const power1     = power.addInstance();
 const uart       = scripting.addModule("/drivers/uart/uart", {}, false);
@@ -71,6 +73,10 @@ gpio1.GPIO.gpioPin.$assign = "PAD_AV";
 hwa1.$name = "CONFIG_HWA0";
 
 i2c1.$name = "CONFIG_I2C0";
+
+mcspi1.$name                 = "CONFIG_MCSPI0";
+mcspi1.trMode                = "TX_ONLY";
+mcspi1.mcspiChannel[0].$name = "CONFIG_MCSPI_CH0";
 
 power1.$name                        = "CONFIG_POWER0";
 power1.enterLPDSHookFunction        = "power_LPDSentryhook";
@@ -136,7 +142,12 @@ flash1.peripheralDriver.QSPI.DIN1.$suggestSolution = "PAD_AF";
 flash1.peripheralDriver.QSPI.CLK.$suggestSolution  = "PAD_AA";
 flash1.peripheralDriver.QSPI.CS.$suggestSolution   = "PAD_AB";
 i2c1.I2C.$suggestSolution                          = "I2C0";
-i2c1.I2C.SCL.$suggestSolution                      = "PAD_AG";
-i2c1.I2C.SDA.$suggestSolution                      = "PAD_AH";
+i2c1.I2C.SCL.$suggestSolution                      = "PAD_AN";
+i2c1.I2C.SDA.$suggestSolution                      = "PAD_AL";
+mcspi1.MCSPI.$suggestSolution                      = "MCSPIA";
+mcspi1.MCSPI.CLK.$suggestSolution                  = "PAD_AG";
+mcspi1.MCSPI.MOSI.$suggestSolution                 = "PAD_AI";
+mcspi1.MCSPI.MISO.$suggestSolution                 = "PAD_AJ";
+mcspi1.mcspiChannel[0].CSn.$suggestSolution        = "PAD_AH";
 uart1.UART.$suggestSolution                        = "UARTB";
 timer1.APPSS_RTI.$suggestSolution                  = "APPSS_RTIA";
