@@ -1,14 +1,11 @@
-Output: NC Drill Files
-Type  : NC Drill
-From  : Project [mmWave_PCB.PrjPcb]
-   Generated File[AOP6432-RoundHoles.TXT]
-   Generated File[AOP6432-SlotHoles.TXT]
-   Generated File[AOP6432.DRL]
-   Generated File[AOP6432.LDP]
-   Generated File[AOP6432.DRR]
+Output: Generates pick and place files
+Type  : Pick Place
+From  : Variant [[No Variations]] of Project [mmWave_PCB.PrjPcb]
+   Generated File[Pick Place for AOP6432.txt]
+   Generated File[Pick Place for AOP6432.csv]
 
 
-Files Generated   : 5
+Files Generated   : 2
 Documents Printed : 0
 
-Finished Output Generation At 5:43:45 PM On 3/25/2026
+Finished Output Generation At 7:50:41 PM On 3/25/2026
