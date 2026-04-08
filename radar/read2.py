@@ -13,12 +13,12 @@ q: queue.Queue = queue.Queue(1)
 
 MINIMUM_POINTS = 5
 
-RECORD_MODE = False
+RECORD_MODE = True
 
 pressed = False
 
 frames = []
-frame_count = 1;
+frame_count = 14;
 
 import tkinter as tk
 def launch_recorder_ui():
