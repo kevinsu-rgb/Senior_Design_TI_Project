@@ -13,7 +13,7 @@ q: queue.Queue = queue.Queue(1)
 
 MINIMUM_POINTS = 5
 
-RECORD_MODE = True
+RECORD_MODE = False
 
 pressed = False
 
@@ -317,15 +317,27 @@ def read_uart(_x: str, data_port: str, baud_rate: int):
 
 
 def infer(X_pc, X_hm):
-    #input_pc = np.array(X_pc, dtype=np.float32).reshape(1, -1)
-    #input_hm = np.array(X_hm, dtype=np.float32).reshape(1, 1, 8, 32, 32)
-    
+    #print(X_pc.dtype, X_pc.shape)
+    #print(X_hm.dtype, X_hm.shape)
+    #torch_out = model(torch.tensor(X_pc), torch.tensor(X_hm))
     outputs = ort_session.run(None, {
         "point_cloud_input": X_pc, 
         "heatmap_input": X_hm
     })
+
+    logits = outputs[0]
+
+    e_x = np.exp(logits - np.max(logits, axis=1, keepdims=True))
+    probs = e_x / e_x.sum(axis=1, keepdims=True)
+
+    FALL_THRESHOLD = 0.85  
+    fall_idx = 1  
     
-    return np.argmax(outputs[0], axis=1)[0]
+    if probs[0][fall_idx] > FALL_THRESHOLD:
+        return fall_idx
+    else:
+        probs[0][fall_idx] = 0
+        return np.argmax(probs[0])
 
 
 def process(data_dict):
@@ -407,7 +419,8 @@ def predict(status_out_queue: queue.Queue | None = None):
         hm_list = [f[-1] for f in window]
 
         X_pc = np.array(pc_list, dtype=np.float32).reshape(1, 8, 22)
-        X_hm = np.array(hm_list, dtype=np.float32).reshape(1, 1, 8, 32, 32)
+        X_hm = np.array(hm_list, dtype=np.float32).reshape(1, 8, 32, 32)
+        X_hm = X_hm[:, np.newaxis, :, :, :]
 
         result = infer(X_pc, X_hm)
 
