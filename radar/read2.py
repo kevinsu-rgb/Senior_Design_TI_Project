@@ -330,7 +330,7 @@ def infer(X_pc, X_hm):
     e_x = np.exp(logits - np.max(logits, axis=1, keepdims=True))
     probs = e_x / e_x.sum(axis=1, keepdims=True)
 
-    FALL_THRESHOLD = 0.85  
+    FALL_THRESHOLD = 0.90  
     fall_idx = 1  
     
     if probs[0][fall_idx] > FALL_THRESHOLD:
