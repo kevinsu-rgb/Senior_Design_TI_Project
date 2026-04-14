@@ -1,0 +1,4 @@
+Change Component Footprint: Designator=U5 Old Footprint=TPS6285020ADRLR New Footprint=TPS6285020MDRLR_Model
+Change Component Footprint: Designator=U6 Old Footprint=TPS6285020MDRLR New Footprint=TPS6285020MDRLR_Model
+Change Net Name : Old Net Name=TP10 New Net Name=VPP_1P7
+Added Rule: Name=Schematic Supply Nets

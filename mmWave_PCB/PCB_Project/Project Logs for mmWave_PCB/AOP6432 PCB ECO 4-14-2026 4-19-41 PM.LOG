@@ -1,0 +1,15 @@
+Added Component: Designator=U2(PTPS2116DRLR_Model)
+Add component (AddParameter): Name = "Copyright"; Value = "Copyright (C) 2025 Ultra Librarian. All rights reserved."; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer_Name"; Value = "Texas Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer_Part_Number"; Value = "PTPS2116DRLR"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "RefDes"; Value = "RefDes"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "TYPE"; Value = "TYPE"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=GND Pin=U2-1
+Added Pin To Net: NetName=5V_IN Pin=U2-2
+Added Pin To Net: NetName=5V_REG Pin=U2-3
+Added Pin To Net: NetName=SW_PR1 Pin=U2-4
+Added Pin To Net: NetName=5V_REG Pin=U2-5
+Added Pin To Net: NetName=FT230_VCC Pin=U2-6
+Added Pin To Net: NetName=5V_IN Pin=U2-7
+Added Pin To Net: NetName=SW_ST Pin=U2-8
+Added Member To Class: ClassName=DC_Regulator Member=Component U2 PTPS2116DRLR
