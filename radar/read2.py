@@ -1,7 +1,7 @@
 import onnxruntime as ort
 import sys
 import pandas as pd
-from collections import deque
+from collections import deque, Counter
 import serial
 import threading
 import time
@@ -50,7 +50,7 @@ def launch_recorder_ui():
                 'p4x', 'p4y', 'p4z', 'p5x', 'p5y', 'p5z', 'heatmap'
             ]
             big_df = pd.DataFrame(frames, columns=columns)
-            big_df.to_csv(f"data/classes/FALLING/frames{frame_count}.csv", index=False)
+            big_df.to_csv(f"data/classes/STS/frames{frame_count}.csv", index=False)
             status.config(text=f"Saved {len(frames)} frames!", fg="#2980b9")
             print(f"Saved {len(frames)} frames to cs1v")
             frames = []
@@ -330,14 +330,7 @@ def infer(X_pc, X_hm):
     e_x = np.exp(logits - np.max(logits, axis=1, keepdims=True))
     probs = e_x / e_x.sum(axis=1, keepdims=True)
 
-    FALL_THRESHOLD = 0.90  
-    fall_idx = 1  
-    
-    if probs[0][fall_idx] > FALL_THRESHOLD:
-        return fall_idx
-    else:
-        probs[0][fall_idx] = 0
-        return np.argmax(probs[0])
+    return np.argmax(probs[0])
 
 
 def process(data_dict):
@@ -381,14 +374,18 @@ def predict(status_out_queue: queue.Queue | None = None):
     global q
     global pressed
     global frames
+
     WINDOW_SIZE = 8
+    SMOOTHING_WINDOW_SIZE = 8
     FEATURE_COUNT = 22
     window = deque(maxlen=WINDOW_SIZE)
+    results_history = deque(maxlen=SMOOTHING_WINDOW_SIZE)
 
     #for _ in range(WINDOW_SIZE):
     #    window.append(np.zeros(FEATURE_COUNT))
 
-    class_data = {0: 'SITTING', 1: 'FALLING', 2: 'WALKING'}
+    #class_data = {0: 'SITTING', 1: 'FALLING', 2: 'WALKING', 3: 'STANDING', 4: 'STS'}
+    class_data = {0: 'SITTING', 1: 'FALLING', 2: 'WALKING', 3: 'STS', 4: 'STANDING'}
     #class_predicted = 0
 
     columns = [
@@ -398,6 +395,9 @@ def predict(status_out_queue: queue.Queue | None = None):
     ]
 
     i = 0
+
+    prev_status_label = "hi"
+
     while True: 
         raw_data = q.get()
         processed_row = process(raw_data)
@@ -422,16 +422,41 @@ def predict(status_out_queue: queue.Queue | None = None):
         X_hm = np.array(hm_list, dtype=np.float32).reshape(1, 8, 32, 32)
         X_hm = X_hm[:, np.newaxis, :, :, :]
 
-        result = infer(X_pc, X_hm)
+        raw_result = infer(X_pc, X_hm)
 
-        status_label = class_data[int(result)]
+        results_history.append(raw_result)
 
-        print(f"Status: {status_label}")
-        if status_out_queue is not None:
-            try:
-                status_out_queue.put(status_label, block=False)
-            except queue.Full:
-                pass
+        most_common_raw = Counter(results_history).most_common(1)[0][0]
+        status_label = class_data[int(most_common_raw)]
+        
+        if status_label == "STS":
+            if prev_status_label == "STANDING":
+                status_label = "SITTING"
+            elif prev_status_label == "SITTING":
+                status_label = "STANDING"
+            else:
+                status_label = prev_status_label 
+        else:
+            prev_status_label = status_label
+        
+        print(f"Status: {status_label:<10}")
+        
+            #print(f"Status: {status_label:<10}")
+            #
+            #if status_out_queue is not None:
+            #    try:
+            #        status_out_queue.put(status_label, block=False)
+            #    except queue.Full:
+            #        pass
+
+        #status_label = class_data[int(raw_result)]
+
+        #print(f"Status: {status_label}")
+        #if status_out_queue is not None:
+        #    try:
+        #        status_out_queue.put(status_label, block=False)
+        #    except queue.Full:
+        #        pass
 
 def main():
     cli_port = "/dev/ttyACM0"
