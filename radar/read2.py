@@ -370,6 +370,7 @@ def process(data_dict):
     return base_features + flat_points + heatmap_list
 
 
+
 def predict(status_out_queue: queue.Queue | None = None):
     global q
     global pressed
@@ -423,24 +424,43 @@ def predict(status_out_queue: queue.Queue | None = None):
         X_hm = X_hm[:, np.newaxis, :, :, :]
 
         raw_result = infer(X_pc, X_hm)
-
+        # 1. ADD TO HISTORY
         results_history.append(raw_result)
-
-        most_common_raw = Counter(results_history).most_common(1)[0][0]
-        status_label = class_data[int(most_common_raw)]
         
-        if status_label == "STS":
-            if prev_status_label == "STANDING":
-                status_label = "SITTING"
-            elif prev_status_label == "SITTING":
-                status_label = "STANDING"
-            else:
-                status_label = prev_status_label 
+        counts = Counter(results_history)
+        most_common_raw, frequency = counts.most_common(1)[0]
+        confidence = frequency / len(results_history)
+        
+        if confidence >= 0.8:
+            new_status = class_data[int(most_common_raw)]
         else:
-            prev_status_label = status_label
+            new_status = prev_status_label
+
+        if new_status == "STS":
+            # If the last stable thing they did was sit, they are now standing
+            if prev_status_label == "SITTING":
+                status_label = "STANDING"
+            
+            # If they were standing OR walking, the STS means they are now sitting
+            elif prev_status_label in ["STANDING", "WALKING"]:
+                status_label = "SITTING"
+            
+            else:
+                # Fallback to keep the previous label if we aren't sure
+                status_label = prev_status_label
         
-        print(f"Status: {status_label:<10}")
+        elif new_status == "FALLING":
+            status_label = "FALLING"
         
+        else:
+            status_label = new_status
+            prev_status_label = new_status
+        
+        # 4. OUTPUT
+        print(f"Status: {status_label:<10} (Conf: {confidence:.2f})")
+
+
+               
             #print(f"Status: {status_label:<10}")
             #
             #if status_out_queue is not None:
