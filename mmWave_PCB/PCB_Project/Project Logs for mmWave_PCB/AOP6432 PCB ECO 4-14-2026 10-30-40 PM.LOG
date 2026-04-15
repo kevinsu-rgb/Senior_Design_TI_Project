@@ -1,0 +1,14 @@
+Added Component: Designator=C35(CAPC1005X56N)
+Add component (AddParameter): Name = "Arrow Part Number"; Value = "0402ZD106MAT2A"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Arrow Price/Stock"; Value = "https://www.arrow.com/en/products/0402zd106mat2a/avx?utm_currency=USD&region=nac"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Capacitance"; Value = "10uF"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Datasheet Link"; Value = "http://www.mouser.com/catalog/supplier/library/pdf/AVXSurfaceMountCeramic.pdf"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Geometry.Height"; Value = "0.56mm"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer_Name"; Value = "Kyocera AVX"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer_Part_Number"; Value = "0402ZD106MAT2A"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Mouser Part Number"; Value = "581-0402ZD106MAT2A"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Mouser Price/Stock"; Value = "https://www.mouser.co.uk/ProductDetail/KYOCERA-AVX/0402ZD106MAT2A?qs=sJ5gq5MLFXpDfmjiItAxIg%3D%3D"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Voltage"; Value = "10V"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=GND Pin=C35-1
+Added Pin To Net: NetName=FT230_VCC Pin=C35-2
+Added Member To Class: ClassName=AOPIO Member=Component C35 0402ZD106MAT2A
