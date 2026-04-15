@@ -1,0 +1,8 @@
+{
+  "radar_name": "mmWavepi",
+  "tcp_host": "0.0.0.0",
+  "tcp_port": 7777,
+  "discovery_port": 47777,
+  "allow_broadcast": true,
+  "heartbeat_interval_s": 1.0
+}

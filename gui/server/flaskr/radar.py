@@ -12,7 +12,7 @@ def radar_list():
     for i, dev in enumerate(devices):
         radars.append({
             "radar_id": i + 1,
-            "name": "Radar " + chr(64 + i + 1),
+            "name": "Radar " + dev.get("name", "unknown"),
             "radar_ip": dev.get("ip"),
             "tcp_port": dev.get("tcp_port"),
             "timestamp": "2024-06-01T12:00:00Z",
@@ -27,3 +27,11 @@ def radar_list():
 def clear_fault(radar_ip):
     body, status_code = radar_status.clear_fault(radar_ip)
     return body, status_code
+
+@bp.route('/command', methods=['POST'])
+def set_command():
+    from flask import request
+    import json
+    data = request.get_json()
+    radar_status.set_external_command(json.dumps(data))
+    return {"ok": True, "message": f"Command set to '{data}'"}

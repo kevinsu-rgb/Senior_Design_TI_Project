@@ -49,9 +49,24 @@ walking: {
     badgeBg: "bg-neutral-700",
     statusText: "text-red-400",
   },
+  error: {
+    label: "Error",
+    cardBg: "bg-red-950/50",
+    cardBorder: "border-red-800",
+    badgeBg: "bg-red-800",
+    statusText: "text-red-400",
+  },
 };
 
 export function getStatusTheme(rawStatus) {
   const key = (rawStatus || "").toLowerCase();
-  return STATUS_THEME[key] || STATUS_THEME.unknown;
+
+  if (STATUS_THEME[key]) {
+    return STATUS_THEME[key];
+  }
+
+  return {
+    ...STATUS_THEME.error,
+    label: rawStatus || "Error",
+  };
 }

@@ -34,14 +34,45 @@ export default function RadarProvider({ children }) {
         const response = await fetch(`/api/radar/list`);
         if (response.ok) {
           const data = await response.json();
-          setRadarList(data?.radars);
+          setRadarList((prev) => {
+            const nextRadars = data?.radars ?? [];
+            const radarIndexByIp = new Map();
+            const merged = prev.slice();
+            console.log("Previous radar list: ", merged);
+            console.log("Next radar list: ", nextRadars);
+
+            for (let i = 0; i < merged.length; i += 1) {
+              radarIndexByIp.set(merged[i].radar_ip, i);
+            }
+
+            for (let i = 0; i < nextRadars.length; i += 1) {
+              const nextRadar = nextRadars[i];
+              const existingIndex = radarIndexByIp.get(nextRadar.radar_ip);
+
+              if (existingIndex === undefined) {
+                radarIndexByIp.set(nextRadar.radar_ip, merged.length);
+                merged.push(nextRadar);
+              }
+            }
+            
+            console.log("Merged radar list: ", merged);
+            return merged;
+          });
         }
       } catch (err) {
         console.error("Error getting radar list: ", err);
       }
     }
+
     fetchRadarList();
-  }, [ws]);
+
+    // Refresh radar list every 2 seconds to get new radars
+    const intervalId = setInterval(fetchRadarList, 2000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
 
   useEffect(() => {
     if (!ws || !isConnected) return;

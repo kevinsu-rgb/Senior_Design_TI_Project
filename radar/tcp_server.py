@@ -29,6 +29,28 @@ def _now_ms() -> int:
     return int(time.time() * 1000)
 
 
+# Helper to load config from file or fallback to defaults
+def _load_server_config_from_file() -> ServerConfig:
+    import device_config
+
+    file_cfg = {}
+    try:
+        loaded = device_config.load_config()
+        if isinstance(loaded, dict):
+            file_cfg = loaded
+    except Exception:
+        file_cfg = {}
+
+    return ServerConfig(
+        name=file_cfg.get("radar_name") or socket.gethostname(),
+        tcp_host=file_cfg.get("tcp_host") or "0.0.0.0",
+        tcp_port=int(file_cfg.get("tcp_port", DEFAULT_TCP_PORT)),
+        discovery_port=int(file_cfg.get("discovery_port", DEFAULT_DISCOVERY_PORT)),
+        allow_broadcast=bool(file_cfg.get("allow_broadcast", True)),
+        heartbeat_interval_s=float(file_cfg.get("heartbeat_interval_s", 1.0)),
+    )
+
+
 @dataclass
 class ServerConfig:
     name: str
@@ -36,6 +58,7 @@ class ServerConfig:
     tcp_port: int
     discovery_port: int
     allow_broadcast: bool
+    heartbeat_interval_s: float
 
 
 class RadarTcpServer:
@@ -51,11 +74,13 @@ class RadarTcpServer:
         self._tcp_thread = threading.Thread(target=self._tcp_accept_loop, daemon=True)
         self._fanout_thread = threading.Thread(target=self._fanout_loop, daemon=True)
         self._udp_thread = threading.Thread(target=self._udp_discovery_loop, daemon=True)
+        self._heartbeat_thread = threading.Thread(target=self._heartbeat_loop, daemon=True)
 
     def start(self) -> None:
         self._tcp_thread.start()
         self._fanout_thread.start()
         self._udp_thread.start()
+        self._heartbeat_thread.start()
 
     def stop(self) -> None:
         self._stop.set()
@@ -194,6 +219,18 @@ class RadarTcpServer:
                 except Exception:
                     pass
 
+    def _heartbeat_loop(self) -> None:
+        while not self._stop.is_set():
+            self.publish_event(
+                {
+                    "type": "heartbeat",
+                    "status": "UNKNOWN",
+                }
+            )
+
+            if self._stop.wait(self.cfg.heartbeat_interval_s):
+                break
+
     def _drop_client(self, client: socket.socket) -> None:
         with self._clients_lock:
             new_clients = []
@@ -209,42 +246,63 @@ class RadarTcpServer:
             pass
 
 
+# Background thread to refresh config from file
+def refresh_cfg_loop(cfg: ServerConfig, stop_event: threading.Event, interval_s: float = 2.0) -> None:
+    import device_config
+
+    while not stop_event.is_set():
+        try:
+            loaded = device_config.load_config()
+            if isinstance(loaded, dict):
+                radar_name = loaded.get("radar_name")
+                if isinstance(radar_name, str) and radar_name.strip():
+                    cfg.name = radar_name.strip()
+
+                tcp_host = loaded.get("tcp_host")
+                if isinstance(tcp_host, str) and tcp_host.strip():
+                    cfg.tcp_host = tcp_host.strip()
+
+                tcp_port = loaded.get("tcp_port")
+                if tcp_port is not None:
+                    cfg.tcp_port = int(tcp_port)
+
+                discovery_port = loaded.get("discovery_port")
+                if discovery_port is not None:
+                    cfg.discovery_port = int(discovery_port)
+
+                allow_broadcast = loaded.get("allow_broadcast")
+                if allow_broadcast is not None:
+                    cfg.allow_broadcast = bool(allow_broadcast)
+
+                heartbeat_interval_s = loaded.get("heartbeat_interval_s")
+                if heartbeat_interval_s is not None:
+                    cfg.heartbeat_interval_s = float(heartbeat_interval_s)
+        except Exception as e:
+            print(f"Failed to refresh config from JSON: {e}")
+
+        if stop_event.wait(interval_s):
+            break
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser()
-    p.add_argument("--name", default=socket.gethostname(), help="Device name shown in discovery")
-    p.add_argument("--tcp-host", default="0.0.0.0", help="Bind address for TCP server")
-    p.add_argument("--tcp-port", type=int, default=DEFAULT_TCP_PORT)
-    p.add_argument("--discovery-port", type=int, default=DEFAULT_DISCOVERY_PORT)
-    
-    p.add_argument("--cfg-path", default="config.cfg", help="Radar config file path passed to send_cfg")
-    p.add_argument("--cli-port", default="/dev/ttyACM0", help="Radar CLI UART port")
-    p.add_argument("--data-port", default="/dev/ttyACM0", help="Radar data UART port")
-    p.add_argument("--cli-baud", type=int, default=115200, help="Radar CLI baud rate")
-    p.add_argument("--data-baud", type=int, default=1250000, help="Radar data baud rate")
-
-    # Keep the old demo option available for quick network testing
-    p.add_argument("--demo", action="store_true", help="Publish fake classification events once per second")
-
+    p = argparse.ArgumentParser(description="Radar TCP server")
+    p.add_argument("--demo", action="store_true", help="Run in demo mode")
     return p.parse_args()
-
 
 def main() -> None:
     args = parse_args()
-    cfg = ServerConfig(
-        name=args.name,
-        tcp_host=args.tcp_host,
-        tcp_port=args.tcp_port,
-        discovery_port=args.discovery_port,
-        allow_broadcast=True,
-    )
-
-    print(args)
+    cfg = _load_server_config_from_file()
 
     srv = RadarTcpServer(cfg)
     srv.start()
 
     status_q: queue.Queue[str] = queue.Queue()
+    cfg_refresh_t = threading.Thread(
+        target=refresh_cfg_loop,
+        args=(cfg, srv._stop),
+        daemon=True,
+        name="config-refresh",
+    )
+    cfg_refresh_t.start()
 
     if args.demo:
         print("Running in demo mode. Publishing fake events every second.")
@@ -268,7 +326,18 @@ def main() -> None:
         print("Starting radar reader thread.")
         import read2  # local import to avoid dependency if just running demo
 
-        read2.send_cfg(args.cfg_path, args.cli_baud, args.cli_port, args.data_port)
+        try:
+            read2.send_cfg(cfg.cfg_path, cfg.cli_baud, cfg.cli_port, cfg.data_port)
+        except Exception as e:
+            while (True):
+                print(f"Failed to send config from {cfg.cfg_path} to radar on {cfg.cli_port} at baud {cfg.cli_baud}. Check connection and config file.")
+                event = {
+                    "type": "status",
+                    "status": "RADAR_CFG_ERROR",
+                }
+                srv.publish_event(event)
+                time.sleep(5.0)
+            
 
         uart_t = threading.Thread(
             target=read2.read_uart, 
@@ -298,13 +367,19 @@ def main() -> None:
                     print("empty")
                     event = {
                         "type": "status",
+<<<<<<< HEAD
                         "status": prev_status,
+=======
+                        "status": "UNKNOWN",
+                        "name": cfg.name,
+>>>>>>> 7ddc379 (change name is broken, recconnect is working)
                     }
                     srv.publish_event(event)
                     continue
                 event = {
                     "type": "status",
                     "status": status,
+                    "name": cfg.name,
                 }
                 srv.publish_event(event)
         except KeyboardInterrupt:

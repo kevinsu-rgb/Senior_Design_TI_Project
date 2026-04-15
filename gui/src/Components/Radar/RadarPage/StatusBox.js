@@ -6,6 +6,7 @@ export default function StatusBox({ radarId }) {
     const radar = useGetRadarById(radarId);
 
     const [now, setNow] = useState(Date.now());
+    const [draftName, setDraftName] = useState("");
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -14,7 +15,36 @@ export default function StatusBox({ radarId }) {
         return () => clearInterval(interval);
     }, []);
 
+    useEffect(() => {
+        if (!radar) return;
+        setDraftName(radar.name ?? "");
+    }, [radar]);
+
     if (!radar) return null;
+
+    async function commitRadarIdentity() {
+        const trimmedName = draftName.trim();
+
+        if (trimmedName === (radar.name ?? "")) {
+            return;
+        }
+
+        try {
+            await fetch("/api/radar/command", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    type: "update_radar_identity",
+                    previous_radar_id: radar.radar_id,
+                    radar_name: trimmedName,
+                }),
+            });
+        } catch (error) {
+            console.error("Failed to update radar identity:", error);
+        }
+    }
 
     function formatDuration(ms) {
         const totalSeconds = Math.floor(ms / 1000);
@@ -33,12 +63,20 @@ export default function StatusBox({ radarId }) {
 
     const theme = getStatusTheme(radar.status);
     const statusLabel = theme.label;
+    const isError = theme.label.includes("error");
+    
 
     return (
         <div className="h-full overflow-hidden bg-bg2 rounded-lg p-8 ">
             <div className={`border-4 ${theme.cardBorder} ${theme.cardBg} rounded-lg p-6`}>
                 <div className="flex items-center justify-between ">
-                    <h2 className="text-5xl font-bold text-white">{radar.name}</h2>
+                    <input
+                        type="text"
+                        value={draftName}
+                        onChange={(e) => setDraftName(e.target.value)}
+                        onBlur={commitRadarIdentity}
+                        className="text-5xl font-bold text-white bg-transparent border-none outline-none focus:outline-none focus:ring-0 p-0 w-full"
+                    />
                 </div>
 
                 <div className="flex items-center gap-2 ">
@@ -52,6 +90,11 @@ export default function StatusBox({ radarId }) {
                             {statusLabel}
                         </span>
                     </p>
+                    {isError && (
+                        <p className="text-red-300 text-sm">
+                            Please power cycle the radar. If the issue persists, good luck.
+                        </p>
+                    )}
                     {radar.fault_latched && (
                         <span className="px-3 py-1 rounded-md bg-red-700 text-white font-semibold text-sm">
                             Fault latched
