@@ -1,36 +1,29 @@
 import torch.nn as nn
+from torch.optim import SGD, Adam
 class NeuralNetwork(nn.Module):
-    '''
-    This is modified to have two branches...
-    Point Cloud -> Linear -> Fusion -> Linear -> Out
-    Heatmap -> Convlayer ->  ^
-    '''
     def __init__(self, input_size, output_size):
         super(LinearModel, self).__init__()
 
         self.pc_branch = nn.Sequential(
             nn.BatchNorm1d(num_features=input_size),
-            nn.Linear(in_features=input_size, out_features=64),
+            nn.Linear(input_size, 64),
             nn.ReLU(),
-            nn.BatchNorm1d(num_features=64),
-            nn.Linear(in_features=64, out_features=32),
+            nn.BatchNorm1d(64),
+            nn.Linear(64, 32),
             nn.ReLU()
         )
 
         self.conv_layers = nn.Sequential(
-            nn.Conv2d(1, 16, kernel_size=3, padding=1),
+            nn.Conv2d(1, 16, kernel_size=3, padding='same'),
             nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.Conv2d(16, 32, kernel_size=3, padding=1),
+            nn.Conv2d(16, 16, kernel_size=3, padding='same'),
             nn.ReLU(),
-            nn.AdaptiveAvgPool2d((4, 4)),
+            nn.AdaptiveAvgPool2d((4, 4)),  # fixes output to 16*4*4=256
             nn.Flatten()
         )
 
-        combined_size = 32 + 512
-
         self.fusion_head = nn.Sequential(
-            nn.Linear(combined_size, 64),
+            nn.Linear(32 + 256, 64),
             nn.BatchNorm1d(64),
             nn.ReLU(),
             nn.Linear(64, output_size)
@@ -41,11 +34,10 @@ class NeuralNetwork(nn.Module):
         out_p = self.pc_branch(xp)
 
         batch_size, channels, window_size, h, w = xh.shape
+        xh = xh.permute(0, 2, 1, 3, 4).contiguous()
         xh_reshaped = xh.view(batch_size * window_size, channels, h, w)
-        out_h_per_frame = self.conv_layers(xh_reshaped)
-        out_h = out_h_per_frame.view(batch_size, window_size, -1)
-
-        out_h = torch.mean(out_h, dim=1)
+        out_h = self.conv_layers(xh_reshaped)
+        out_h = out_h.view(batch_size, window_size, -1).mean(dim=1)
 
         combined = torch.cat((out_p, out_h), dim=1)
         return self.fusion_head(combined)
