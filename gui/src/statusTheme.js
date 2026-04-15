@@ -20,13 +20,14 @@ const STATUS_THEME = {
     badgeBg: "bg-purple-600",
     statusText: "text-purple-400",
   },
-  walking: {
+walking: {
     label: "Walking",
-    cardBg: "bg-amber-900/30",
-    cardBorder: "border-amber-500",
-    badgeBg: "bg-amber-500",
-    statusText: "text-amber-400",
+    cardBg: "bg-emerald-900/30",
+    cardBorder: "border-emerald-600",
+    badgeBg: "bg-emerald-600",
+    statusText: "text-emerald-400",
   },
+
   falling: {
     label: "Fall detected",
     cardBg: "bg-red-900/40",

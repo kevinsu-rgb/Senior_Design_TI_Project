@@ -382,7 +382,7 @@ def predict(status_out_queue: queue.Queue | None = None):
 
     class_data = {0: 'SITTING', 1: 'FALLING', 2: 'WALKING', 3: 'STS', 4: 'STANDING'}
 
-    pred_window = deque(maxlen=4)
+    pred_window = deque(maxlen=6)
     curr_status = 2
 
     columns = [
@@ -425,6 +425,8 @@ def predict(status_out_queue: queue.Queue | None = None):
                 curr_status = pred_window[0]
 
         print(f"status {class_data[curr_status]}")
+        if status_out_queue is not None:
+            status_out_queue.put_nowait(class_data[curr_status])
 
 
 def main():
