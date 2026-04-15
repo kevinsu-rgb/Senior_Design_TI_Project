@@ -50,7 +50,7 @@ def launch_recorder_ui():
                 'p4x', 'p4y', 'p4z', 'p5x', 'p5y', 'p5z', 'heatmap'
             ]
             big_df = pd.DataFrame(frames, columns=columns)
-            big_df.to_csv(f"data/classes/STS/frames{frame_count}.csv", index=False)
+            big_df.to_csv(f"data/classes/TEST/frames{frame_count}.csv", index=False)
             status.config(text=f"Saved {len(frames)} frames!", fg="#2980b9")
             print(f"Saved {len(frames)} frames to cs1v")
             frames = []
@@ -377,17 +377,13 @@ def predict(status_out_queue: queue.Queue | None = None):
     global frames
 
     WINDOW_SIZE = 8
-    SMOOTHING_WINDOW_SIZE = 8
     FEATURE_COUNT = 22
     window = deque(maxlen=WINDOW_SIZE)
-    results_history = deque(maxlen=SMOOTHING_WINDOW_SIZE)
 
-    #for _ in range(WINDOW_SIZE):
-    #    window.append(np.zeros(FEATURE_COUNT))
-
-    #class_data = {0: 'SITTING', 1: 'FALLING', 2: 'WALKING', 3: 'STANDING', 4: 'STS'}
     class_data = {0: 'SITTING', 1: 'FALLING', 2: 'WALKING', 3: 'STS', 4: 'STANDING'}
-    #class_predicted = 0
+
+    pred_window = deque(maxlen=4)
+    curr_status = 2
 
     columns = [
         'posz', 'velx', 'vely', 'velz', 'accx', 'accy', 'accz',
@@ -396,8 +392,6 @@ def predict(status_out_queue: queue.Queue | None = None):
     ]
 
     i = 0
-
-    prev_status_label = "hi"
 
     while True: 
         raw_data = q.get()
@@ -423,60 +417,15 @@ def predict(status_out_queue: queue.Queue | None = None):
         X_hm = np.array(hm_list, dtype=np.float32).reshape(1, 8, 32, 32)
         X_hm = X_hm[:, np.newaxis, :, :, :]
 
-        raw_result = infer(X_pc, X_hm)
-        # 1. ADD TO HISTORY
-        results_history.append(raw_result)
-        
-        counts = Counter(results_history)
-        most_common_raw, frequency = counts.most_common(1)[0]
-        confidence = frequency / len(results_history)
-        
-        if confidence >= 0.8:
-            new_status = class_data[int(most_common_raw)]
-        else:
-            new_status = prev_status_label
+        result = int(infer(X_pc, X_hm))
 
-        if new_status == "STS":
-            # If the last stable thing they did was sit, they are now standing
-            if prev_status_label == "SITTING":
-                status_label = "STANDING"
-            
-            # If they were standing OR walking, the STS means they are now sitting
-            elif prev_status_label in ["STANDING", "WALKING"]:
-                status_label = "SITTING"
-            
-            else:
-                # Fallback to keep the previous label if we aren't sure
-                status_label = prev_status_label
-        
-        elif new_status == "FALLING":
-            status_label = "FALLING"
-        
-        else:
-            status_label = new_status
-            prev_status_label = new_status
-        
-        # 4. OUTPUT
-        print(f"Status: {status_label:<10} (Conf: {confidence:.2f})")
+        pred_window.append(result)
+        if len(set(pred_window)) == 1:
+            if class_data[pred_window[0]] != 'STS':
+                curr_status = pred_window[0]
 
+        print(f"status {class_data[curr_status]}")
 
-               
-            #print(f"Status: {status_label:<10}")
-            #
-            #if status_out_queue is not None:
-            #    try:
-            #        status_out_queue.put(status_label, block=False)
-            #    except queue.Full:
-            #        pass
-
-        #status_label = class_data[int(raw_result)]
-
-        #print(f"Status: {status_label}")
-        #if status_out_queue is not None:
-        #    try:
-        #        status_out_queue.put(status_label, block=False)
-        #    except queue.Full:
-        #        pass
 
 def main():
     cli_port = "/dev/ttyACM0"
