@@ -1,0 +1,28 @@
+Removed Pin From Net: NetName=GND Pin=C43-2
+Removed Pin From Net: NetName=5V_IN Pin=C44-1
+Removed Pin From Net: NetName=GND Pin=C44-2
+Removed Pin From Net: NetName=5V_IN Pin=C45-1
+Removed Pin From Net: NetName=GND Pin=C45-2
+Removed Pin From Net: NetName=5V_IN Pin=C46-1
+Removed Pin From Net: NetName=GND Pin=C46-2
+Removed Pin From Net: NetName=GND Pin=C47-2
+Removed Pin From Net: NetName=GND Pin=C48-2
+Removed Pin From Net: NetName=5V_IN Pin=R17-1
+Removed Pin From Net: NetName=GND Pin=R19-2
+Removed Pin From Net: NetName=5V_IN Pin=U5-1
+Removed Pin From Net: NetName=5V_IN Pin=U5-2
+Removed Pin From Net: NetName=GND Pin=U5-8
+Removed Member From Class: ClassName=DC_Regulator Member=C43
+Removed Member From Class: ClassName=DC_Regulator Member=C44
+Removed Member From Class: ClassName=DC_Regulator Member=C45
+Removed Member From Class: ClassName=DC_Regulator Member=C46
+Removed Member From Class: ClassName=DC_Regulator Member=C47
+Removed Member From Class: ClassName=DC_Regulator Member=C48
+Removed Member From Class: ClassName=DC_Regulator Member=L1
+Removed Member From Class: ClassName=DC_Regulator Member=L2
+Removed Member From Class: ClassName=DC_Regulator Member=R17
+Removed Member From Class: ClassName=DC_Regulator Member=R18
+Removed Member From Class: ClassName=DC_Regulator Member=R19
+Removed Member From Class: ClassName=DC_Regulator Member=U5
+Change Component Description : Designator=U2 Old Description=1.6-V to 5.5-V, 40-mâ„ New Description=1.6-V to 5.5-V, 40-mâ„|, 2.5-A, low-IQ, priority power multiplexer ; 8-SOT-5X3 -40 to 125
+Change Component Description : Designator=J1 Old Description=Extra-Tall Smt Gpio Header For Raspberry Pi Hat - 2X20 Extra Tall Female Header New Description=Extra-Tall Smt Gpio Header For Raspberry Pi Hat - 2X20 Extra Tall Female Header |Adafruit 2714
