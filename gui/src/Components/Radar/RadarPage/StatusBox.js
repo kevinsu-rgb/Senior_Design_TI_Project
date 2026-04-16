@@ -94,7 +94,7 @@ export default function StatusBox({ radarId }) {
                     </p>
                     {isError && (
                         <p className="text-red-300 text-sm">
-                            Please power cycle the radar. If the issue persists, good luck.
+                            Please power cycle the radar. If the issue persists, check radar connection, radar config file, or ports on pi.
                         </p>
                     )}
                     {radar.fault_latched && (
