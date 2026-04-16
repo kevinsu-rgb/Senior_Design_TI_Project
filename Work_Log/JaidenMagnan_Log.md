@@ -33,4 +33,10 @@ last semester: 57 hours.
 - Collect data with the team (8 hours.)
 - Fix bugs in machine learning model (6 hours.)
 - Fix evaluation code (6 hours.)
+### 4/10->17 Total 124 hours:
+- Restructure model to fix conv layers (6 hours.)
+- Fixes to GUI and read2.py QOL (4 hours.)
+- Fix startup bugs on PI and tcp_server (5 hours.)
+- Post processing on the model (6 hours.)
+
 
