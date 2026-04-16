@@ -321,11 +321,11 @@ def main() -> None:
             while True:
                 try:
                     status = status_q.get(timeout=0.5)
+                    prev_status = status
                 except queue.Empty:
-                    print("empty")
                     event = {
                         "type": "status",
-                        "status": "UNKNOWN",
+                        "status": prev_status,
                     }
                     srv.publish_event(event)
                     continue
