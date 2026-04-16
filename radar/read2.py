@@ -382,7 +382,7 @@ def predict(status_out_queue: queue.Queue | None = None):
 
     class_data = {0: 'SITTING', 1: 'FALLING', 2: 'WALKING', 3: 'STS', 4: 'STANDING'}
 
-    pred_window = deque(maxlen=6)
+    pred_window = deque(maxlen=3)
     curr_status = 2
 
     columns = [
@@ -423,6 +423,8 @@ def predict(status_out_queue: queue.Queue | None = None):
         if len(set(pred_window)) == 1:
             if class_data[pred_window[0]] != 'STS':
                 curr_status = pred_window[0]
+            else:
+                curr_status = 0
 
         print(f"status {class_data[curr_status]}")
         if status_out_queue is not None:
