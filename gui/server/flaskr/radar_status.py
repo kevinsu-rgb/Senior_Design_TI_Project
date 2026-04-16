@@ -20,9 +20,12 @@ OFFLINE_TIMEOUT_S = 5.0
 # Each value contains only what the UI needs.
 radars_state = {}
 
-# command to send to radars, set by UI and read by discover_pi when connecting/streaming
-external_command = None
-external_command_lock = threading.Lock()
+def set_name(name: str, radar_ip: str):
+    with state_lock:
+        log.info(f"Setting name for {radar_ip} to '{name}'")
+        radars_state[radar_ip]["name"] = name
+
+
 
 
 def _now_hms():
@@ -48,14 +51,6 @@ def _get_radar_state(radar_ip: str) -> dict:
         radars_state[radar_ip] = st
     return st
 
-def set_external_command(cmd: str | None):
-    global external_command
-    with external_command_lock:
-        external_command = cmd
-
-def get_external_command():
-    with external_command_lock:
-        return external_command
 
 def _build_update_payload(radar_ip: str) -> dict:
     # Caller needs to hold state_lock.
@@ -134,10 +129,8 @@ def background_thread():
                 if evt.get("type") == "heartbeat":
                     is_heartbeat = True
                     newest_status = None
-                    name = evt.get("name")
                 else:
                     newest_status = evt.get("status")
-                    name = evt.get("name")
             elif isinstance(evt, str):
                 newest_status = evt
             else:
@@ -152,15 +145,13 @@ def background_thread():
                 st["last_packet_time"] = time.time()
                 
                 
-                if name is not None:
-                    st["name"] = name
 
                 if not was_connected:
                     st["is_connected"] = True
                     st["connected_since"] = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(st["last_packet_time"]))
                     st.setdefault("activity_log", []).append({"time": _now_hms(), "event": "Radar connected"})
 
-                log.info(f"Processing status for {name}: newest_status={newest_status}, display_status={st.get('display_status')}, fault_latched={st.get('fault_latched')}")
+                log.info(f"Processing status for {st.get('name')}: newest_status={newest_status}, display_status={st.get('display_status')}, fault_latched={st.get('fault_latched')}")
 
                 if is_heartbeat:
                     socketio.emit("radar_status_update", {"updates": _build_update_payload(ip)})
@@ -221,7 +212,6 @@ def test_connect():
                 discover_pi.stream_with_periodic_discovery,
                 status_queue,
                 discovery_interval_s=2.0,
-                command=get_external_command(),
             )
 
         else:

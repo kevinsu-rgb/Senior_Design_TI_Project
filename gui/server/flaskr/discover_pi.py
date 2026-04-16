@@ -64,14 +64,10 @@ def discover_pis(timeout_s=0.6):
 
 
 
-def connect_and_stream(ip: str, tcp_port: int, timeout_s: float = 3.0, command: Optional[str] = None) -> Iterator[Dict[str, Any]]:
+def connect_and_stream(ip: str, tcp_port: int, timeout_s: float = 3.0) -> Iterator[Dict[str, Any]]:
     # Connect to the Pi TCP stream and yield JSON events. This processes one line at a time, so it can be used without buffering the entire response.
     sock = socket.create_connection((ip, tcp_port), timeout=timeout_s)
-    if command is not None:
-        try:
-            sock.sendall((command + "\n").encode("utf-8"))
-        except Exception:
-            pass
+    
     try:
         # Use a file wrapper for clean line-based reads
         f = sock.makefile("r", encoding="utf-8", newline="\n")
@@ -108,7 +104,7 @@ def choose_device(devices: list[dict]) -> Optional[dict]:
         print("Invalid selection. Try again.")
 
 
-def _stream_device(dev: dict, status_queue: queue.Queue, events_lock: threading.Lock, active_devices: dict, active_lock: threading.Lock, command: Optional[str] = None):
+def _stream_device(dev: dict, status_queue: queue.Queue, events_lock: threading.Lock, active_devices: dict, active_lock: threading.Lock):
     # Connect to one device and print events as they arrive. This is designed to run in a separate thread for each device.
     name = dev.get("name", "unknown")
     ip = dev.get("ip")
@@ -123,7 +119,7 @@ def _stream_device(dev: dict, status_queue: queue.Queue, events_lock: threading.
                 print(f"{prefix} too many connection failures, giving up.")
                 break
             try:
-                for evt in connect_and_stream(ip, port, command=command):
+                for evt in connect_and_stream(ip, port):
                     print(f"{prefix} {evt}")
                     with events_lock:
                         status_queue.put((ip, evt))
@@ -147,7 +143,7 @@ def _stream_device(dev: dict, status_queue: queue.Queue, events_lock: threading.
             active_devices.pop(key, None)
         print(f"{prefix} removed from active devices.")
 
-def _stream_all(devices: list[dict], status_queue, active_devices: Optional[dict] = None, active_lock: Optional[threading.Lock] = None, command: Optional[str] = None):
+def _stream_all(devices: list[dict], status_queue, active_devices: Optional[dict] = None, active_lock: Optional[threading.Lock] = None):
     events_lock = threading.Lock()
 
     if active_devices is None:
@@ -167,7 +163,7 @@ def _stream_all(devices: list[dict], status_queue, active_devices: Optional[dict
 
             t = threading.Thread(
                 target=_stream_device,
-                args=(dev, status_queue, events_lock, active_devices, active_lock, command),
+                args=(dev, status_queue, events_lock, active_devices, active_lock),
                 daemon=True,
             )
             active_devices[key] = t
@@ -176,14 +172,14 @@ def _stream_all(devices: list[dict], status_queue, active_devices: Optional[dict
     return active_devices
 
 
-def stream_with_periodic_discovery(status_queue: queue.Queue, discovery_interval_s: float = 5.0, timeout_s: float = 1.0, command: Optional[str] = None):
+def stream_with_periodic_discovery(status_queue: queue.Queue, discovery_interval_s: float = 5.0, timeout_s: float = 1.0):
     active_devices: Dict[tuple, threading.Thread] = {}
     active_lock = threading.Lock()
 
     while True:
         try:
             devices = discover_pis(timeout_s=timeout_s)
-            _stream_all(devices, status_queue, active_devices=active_devices, active_lock=active_lock, command=command)
+            _stream_all(devices, status_queue, active_devices=active_devices, active_lock=active_lock)
         except KeyboardInterrupt:
             raise
         except Exception as e:

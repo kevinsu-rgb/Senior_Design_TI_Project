@@ -7,6 +7,7 @@ export default function StatusBox({ radarId }) {
 
     const [now, setNow] = useState(Date.now());
     const [draftName, setDraftName] = useState("");
+    const [isEditingName, setIsEditingName] = useState(false);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -16,29 +17,29 @@ export default function StatusBox({ radarId }) {
     }, []);
 
     useEffect(() => {
-        if (!radar) return;
+        if (!radar || isEditingName) return;
         setDraftName(radar.name ?? "");
-    }, [radar]);
+    }, [radar, isEditingName]);
 
     if (!radar) return null;
 
     async function commitRadarIdentity() {
         const trimmedName = draftName.trim();
+        setIsEditingName(false);
 
         if (trimmedName === (radar.name ?? "")) {
             return;
         }
 
         try {
-            await fetch("/api/radar/command", {
+            await fetch("/api/radar/name", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    type: "update_radar_identity",
-                    previous_radar_id: radar.radar_id,
-                    radar_name: trimmedName,
+                    name: trimmedName,
+                    radar_ip: radar.radar_ip,
                 }),
             });
         } catch (error) {
@@ -73,6 +74,7 @@ export default function StatusBox({ radarId }) {
                     <input
                         type="text"
                         value={draftName}
+                        onFocus={() => setIsEditingName(true)}
                         onChange={(e) => setDraftName(e.target.value)}
                         onBlur={commitRadarIdentity}
                         className="text-5xl font-bold text-white bg-transparent border-none outline-none focus:outline-none focus:ring-0 p-0 w-full"
