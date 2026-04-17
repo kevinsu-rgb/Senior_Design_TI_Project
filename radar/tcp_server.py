@@ -289,7 +289,7 @@ def main() -> None:
             read2.send_cfg(args.cfg_path, args.cli_baud, args.cli_port, args.data_port)
         except Exception as e:
             while (True):
-                print(f"Failed to send config from {args.cfg_path}. Check connection and config file.")
+                print(f"Failed to send config from {args.cfg_path}. Check connection and config file. Error: {e}")
                 event = {
                     "type": "status",
                     "status": "RADAR_CFG_ERROR",
