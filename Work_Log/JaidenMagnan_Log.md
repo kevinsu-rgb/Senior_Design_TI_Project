@@ -40,3 +40,8 @@ last semester: 57 hours.
 - Post processing on the model (6 hours.)
 
 
+### FINAL HOURS
+LAST SEMESTER -> 51
+THIS SEMESTER-> 124
+
+# total: 175
