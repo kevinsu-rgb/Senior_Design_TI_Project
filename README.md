@@ -24,11 +24,28 @@ npx @biomejs/biome format ./src --write
 ![test](gui/assets/test.png)
 
 # mmWave PCB
+'''
 Our PCB design will be a Raspberry PI 4 hat, with necessary IO and debug ports.
 PCB IO Schematic:
+'''
 ![mmWave PCB IO](Images/mmWave_PCB_IO.png)
+'''
+PCB V1 Back:
+'''
 ![pcb_v1](Images/pcb_v1.png)
-In Progress (Began adding and drawing schematic components)
+'''
+PCB V1 Front:
+'''
+![pcb_v1_front](Images/pcb_v1_front.png)
+'''
+PCB V2 in Radar_PCB_Kevin_New Branch
+PCB V2 Front:
+'''
+![pcb_v2_front](Images/pcb_v2_front.png)
+'''
+PCB V2 Front:
+'''
+![pcb_v2_front](Images/pcb_v2_back.png)
 
 # Wall Mounted Housing
 ![mmRadar_Housing_Bottom](Radar_Housing/mmRadar_Housing_Bottom.png)
