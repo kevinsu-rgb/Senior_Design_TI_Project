@@ -1,4 +1,4 @@
-# mmWavedar
+# mmWave Radar Project
 
 # Development Guide
 1. Go into the gui/ folder and run `npm install` to install dependencies.
@@ -24,6 +24,8 @@ npx @biomejs/biome format ./src --write
 ![test](gui/assets/test.png)
 
 # mmWave PCB
+Our PCB design will be a Raspberry PI 4 hat, with necessary IO and debug ports.
+![pcb_v1](Images/pcb_v1.png)
 In Progress (Began adding and drawing schematic components)
 
 # Wall Mounted Housing
