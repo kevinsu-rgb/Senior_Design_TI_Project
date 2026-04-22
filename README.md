@@ -25,6 +25,8 @@ npx @biomejs/biome format ./src --write
 
 # mmWave PCB
 Our PCB design will be a Raspberry PI 4 hat, with necessary IO and debug ports.
+PCB IO Schematic:
+![mmWave PCB IO](Images/mmWave PCB IO.png)
 ![pcb_v1](Images/pcb_v1.png)
 In Progress (Began adding and drawing schematic components)
 
