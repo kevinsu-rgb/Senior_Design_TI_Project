@@ -39,3 +39,25 @@
 
 > * [x] Add disconnect logic and ui updates, uptime, offline status **(4 hours)**
 
+
+## Work of 3/29 - 4/5
+
+> * [x] Debug broken features in UI and tcp server **(5 hours)**
+
+
+## Work of 4/5 - 4/12
+
+> * [x] Train ML model **(4 hours)**
+
+## Work of 4/5 - 4/12
+
+> * [x] Train ML model **(4 hours)**
+
+## Work of 4/12 - 4/19
+
+> * [x] Add change name, reconnect logic, and other UI features **(8 hours)**
+> * [x] Fix bugs with Pi startup, tcp server, and UI from added features **(6 hours)**
+
+## Total hours: **165**. 
+Last semester **(49)** hours
+This semester **(116)** hours
