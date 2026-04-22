@@ -33,4 +33,24 @@
 - Worked on changing the way we format csv. (2 hours.)
 - Worked on updating config for better range in data collection. (1 hour.)
 - Worked on demoing the radar in CpE lab, still having issues with range. (2 hours.)
-### Total hours: 65 hours.
+### 2/21->2/28: 8 hours.
+- Met up with team at MALA. Prepared for beta presentation. (3 hours.)
+- Practiced beta presentation. Collected extra data for sitting and standing (2 hours.)
+- Tested EVM + Raspberry Pi together. Debugged system (3 hours.)
+### 3/07->3/14: 7 hours.
+- Worked on ML model to use azimuth + point cloud (4 hours.)
+- Worked on data visualization: point cloud plots for sitting (3 hours.)
+### 3/15->3/22: 0 hours.
+- Spring Break :)
+### 3/23->3/31: 12 hours.
+- Finalized data visualization for heatmap and point cloud for all classes (6 hours.)
+- Continue collecting data for all classes (6 hours.)
+### 4/01->4/08: 5 hours.
+- Start working on heatmap playback per TI advice (3 hours.)
+- Continue improving ML model (2 hours.)
+- got sick for rest of week (0 hours.)
+### 4/09->4/16: 11 hours.
+- Finalize heatmap playback (5 hours.)
+- Finalize ML model (2 hours.)
+- Finish collecting 1K+ samples per class (4 hours.)
+### Total hours: 45.4 Last semester + 108 hours = 153.5 hours.
